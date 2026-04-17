@@ -62,9 +62,17 @@ class _QueueListTileState extends State<QueueListTile> {
                   ? const Icon(Icons.equalizer, color: Colors.green)
                   : widget.dragHandle,
 
-              title: Text(widget.song.title),
+              title: Text(
+                widget.song.title,
+                maxLines: 1,
+                overflow: TextOverflow.ellipsis,
+              ),
 
-              subtitle: Text(widget.song.artist),
+              subtitle: Text(
+                widget.song.artist,
+                maxLines: 1,
+                overflow: TextOverflow.ellipsis,
+              ),
 
               trailing: PopupMenuButton<String>(
                 icon: const Icon(Icons.more_vert),

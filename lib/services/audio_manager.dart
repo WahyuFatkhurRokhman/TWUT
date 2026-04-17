@@ -2,6 +2,7 @@ import 'dart:io';
 import 'package:audioplayers/audioplayers.dart';
 import 'package:flutter/foundation.dart';
 import 'package:audio_metadata_reader/audio_metadata_reader.dart';
+import 'package:music_player/models/constant/REPEAT_MODE.dart';
 import '../models/song.dart';
 import 'play_queue.dart';
 
@@ -17,42 +18,67 @@ class AudioManager {
   final isPlaying = ValueNotifier(false);
   final position = ValueNotifier(Duration.zero);
   final duration = ValueNotifier(Duration.zero);
+  final volume = ValueNotifier(1.0);
+  final repeatMode = ValueNotifier(REPEAT_MODE.OFF);
 
   bool _initialized = false;
+  bool _queueEnded = false;
 
   void init() {
     if (_initialized) return;
     _initialized = true;
 
-    _player.onDurationChanged.listen((d) => duration.value = d);
-    _player.onPositionChanged.listen((p) => position.value = p);
+    _player.onDurationChanged.listen((d) {
+      duration.value = d;
+    });
+
+    _player.onPositionChanged.listen((p) {
+      position.value = p;
+    });
+
+    _player.setVolume(volume.value);
 
     _player.onPlayerComplete.listen((_) async {
       position.value = Duration.zero;
 
-      if (queue.isEmpty) {
-        await _player.stop();
-        isPlaying.value = false;
-        currentSong.value = null;
+      final mode = repeatMode.value;
+
+      // repeat satu lagu
+      if (mode == REPEAT_MODE.ONE) {
+        await playFromQueue();
         return;
       }
 
+      // queue kosong
+      if (queue.isEmpty) {
+        await stopAndClearCurrent();
+        return;
+      }
+
+
+      // lagu terakhir selesai
       if (queue.isLast) {
+        if (mode == REPEAT_MODE.ALL) {
+          queue.setIndex(0);
+          await playFromQueue();
+          return;
+        }
+
         await _player.stop();
         isPlaying.value = false;
-      } else {
-        queue.next();
-        await playFromQueue();
+        _queueEnded = true;
+        return;
       }
+
+      // lanjut next
+      queue.next();
+      await playFromQueue();
     });
   }
 
-  // 🎵 Play dari queue
   Future<void> playFromQueue() async {
-    if (queue.songs.isEmpty) {
-      await _player.stop();
-      isPlaying.value = false;
-      currentSong.value = null;
+    if (queue.isEmpty) {
+      await stopAndClearCurrent();
       return;
     }
 
@@ -62,10 +88,10 @@ class AudioManager {
     await _playSong(song);
   }
 
-  // 🔥 Core play
+  // ===============================
+  // CORE PLAY
+  // ===============================
   Future<void> _playSong(Song song) async {
-    if (currentSong.value?.path == song.path && isPlaying.value) return;
-
     final file = File(song.path);
     final metadata = readMetadata(file, getImage: true);
 
@@ -85,6 +111,7 @@ class AudioManager {
     await _player.play(DeviceFileSource(song.path));
 
     isPlaying.value = true;
+    _queueEnded = false;
   }
 
   Future<void> stopAndClearCurrent() async {
@@ -94,16 +121,37 @@ class AudioManager {
     isPlaying.value = false;
     position.value = Duration.zero;
     duration.value = Duration.zero;
+
+    _queueEnded = false;
   }
 
-  // ⏯ Toggle
   Future<void> toggle() async {
+    // sedang play -> pause
     if (isPlaying.value) {
       await _player.pause();
-    } else {
-      await _player.resume();
+      isPlaying.value = false;
+      return;
     }
-    isPlaying.value = !isPlaying.value;
+
+    // queue selesai
+    if (_queueEnded) {
+      if (repeatMode.value == REPEAT_MODE.ALL) {
+        queue.setIndex(0);
+      }
+
+      await playFromQueue();
+      return;
+    }
+
+    // belum ada lagu
+    if (currentSong.value == null) {
+      await playFromQueue();
+      return;
+    }
+
+    // resume pause
+    await _player.resume();
+    isPlaying.value = true;
   }
 
   Future<void> playAt(int index) async {
@@ -111,23 +159,58 @@ class AudioManager {
     await playFromQueue();
   }
 
-  // ⏭ Next
   Future<void> playNext() async {
-    if (queue.isLast) return;
-    queue.next();
+    if (queue.isEmpty) return;
+
+    if (queue.isLast) {
+      if(queue.shuffleMode.value){
+        queue.refreshShuffle();
+        queue.setIndex(1);
+      }else{
+        queue.setIndex(0);
+      }
+    }else  {
+      queue.next();
+    }
+
     await playFromQueue();
   }
 
-  // ⏮ Previous
   Future<void> playPrevious() async {
-    if (queue.isFirst) return;
-    queue.previous();
+    if (queue.isEmpty) return;
+
+    if (queue.isFirst) {
+      queue.setIndex(queue.songs.length - 1);
+    } else {
+      queue.previous();
+    }
+
     await playFromQueue();
   }
 
-  // ⏩ Seek
   Future<void> seek(int sec) async {
     await _player.seek(Duration(seconds: sec));
+  }
+
+  Future<void> setVolume(double value) async {
+    volume.value = value.clamp(0.0, 1.0);
+    await _player.setVolume(volume.value);
+  }
+
+  void toggleRepeatMode() {
+    switch (repeatMode.value) {
+      case REPEAT_MODE.OFF:
+        repeatMode.value = REPEAT_MODE.ALL;
+        break;
+
+      case REPEAT_MODE.ALL:
+        repeatMode.value = REPEAT_MODE.ONE;
+        break;
+
+      case REPEAT_MODE.ONE:
+        repeatMode.value = REPEAT_MODE.OFF;
+        break;
+    }
   }
 
   void dispose() {
