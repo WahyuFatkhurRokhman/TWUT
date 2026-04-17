@@ -1,155 +1,184 @@
 import 'dart:io';
+import 'dart:isolate';
 import 'package:flutter/foundation.dart';
 
 import '../models/song.dart';
 import '../models/folder_group.dart';
-import '../models/album_group.dart';
 import '../models/artist_group.dart';
-import '../models/alphabet_group.dart';
-
-import 'music_scanner.dart';
-import 'music_cache_service.dart';
+import '../models/album_group.dart';
+import '../services/music_scanner.dart';
+import '../services/music_cache_service.dart';
 
 class MusicService {
+  MusicService._();
+  static final MusicService instance = MusicService._();
 
-  Future<List<Song>> _getSongs() async {
-    final userMusicDir = Directory('C:\\Users');
+  /// SONGS
+  final ValueNotifier<List<Song>> songs = ValueNotifier([]);
 
-    if (!await userMusicDir.exists()) return [];
+  /// GROUPS
+  final ValueNotifier<List<FolderGroup>> folderGroup = ValueNotifier([]);
+  final ValueNotifier<List<ArtistGroup>> artistGroup = ValueNotifier([]);
+  final ValueNotifier<List<AlbumGroup>> albumGroup = ValueNotifier([]);
 
-    final cache = await MusicCacheService.loadSongs();
-    if (cache.isNotEmpty) {
-      print("Load dari cache ⚡");
-      return cache;
+  /// STATE
+  final ValueNotifier<bool> isLoading = ValueNotifier(false);
+  final ValueNotifier<bool> isScanned = ValueNotifier(false);
+
+  ReceivePort? _receivePort;
+  Isolate? _isolate;
+
+  final Map<String, FolderGroup> _folderMap = {};
+  final Map<String, ArtistGroup> _artistMap = {};
+  final Map<String, AlbumGroup> _albumMap = {};
+
+  Future<void> loadSongs() async {
+    if (isLoading.value || isScanned.value) return;
+
+    _reset();
+    isLoading.value = true;
+
+    /// ===============================
+    /// LOAD DARI CACHE DULU
+    /// ===============================
+    final cacheSongs = await MusicCacheService.loadSongs();
+
+    if (cacheSongs.isNotEmpty) {
+      for (final song in cacheSongs) {
+        _insertSongRealtime(song);
+      }
+
+      isLoading.value = false;
+      isScanned.value = true;
+      return;
     }
 
-    final songs = await compute(_scanInIsolate, userMusicDir.path);
-    await MusicCacheService.saveSongs(songs);
+    /// ===============================
+    /// JIKA CACHE KOSONG => SCAN
+    /// ===============================
+    _receivePort = ReceivePort();
 
-    return songs;
+    _isolate = await Isolate.spawn(
+      MusicScanner.scanMusicStream,
+      _receivePort!.sendPort,
+    );
+
+    _receivePort!.listen((data) {
+      if (data == null) {
+        _finishScan();
+        return;
+      }
+
+      if (data is Song) {
+        _insertSongRealtime(data);
+      }
+    });
   }
 
-  static List<Song> _scanInIsolate(String path) {
-    return MusicScanner.scanMusicStrict(path);
-  }
+  void _insertSongRealtime(Song song) {
+    songs.value = [...songs.value, song];
 
+    /// folder
+    final folderPath = File(song.path).parent.path;
+    final folderName = folderPath.split(Platform.pathSeparator).last;
 
-  Future<List<FolderGroup>> getByFolder() async {
-    final songs = await _getSongs();
-
-    final Map<String, List<Song>> map = {};
-
-    for (final song in songs) {
-      final folderPath = Directory(song.path).parent.path;
-
-      map.putIfAbsent(folderPath, () => []);
-      map[folderPath]!.add(song);
-    }
-
-    return map.entries.map((e) {
-      return FolderGroup(
-        path: e.key,
-        name: e.key.split(Platform.pathSeparator).last,
-        songs: e.value,
+    if (_folderMap.containsKey(folderPath)) {
+      _folderMap[folderPath]!.songs.add(song);
+    } else {
+      _folderMap[folderPath] = FolderGroup(
+        path: folderPath,
+        name: folderName,
+        songs: [song],
       );
-    }).toList()
-      ..sort((a, b) => a.name.compareTo(b.name));
-  }
-
-
-  Future<List<AlbumGroup>> getByAlbum() async {
-    final songs = await _getSongs();
-
-    final Map<String, List<Song>> map = {};
-
-    for (final song in songs) {
-      final album = song.album.isNotEmpty ? song.album : 'Unknown Album';
-      map.putIfAbsent(album, () => []);
-      map[album]!.add(song);
     }
 
-    map.values.forEach((list) {
-      list.sort((a, b) => a.title.compareTo(b.title));
-    });
+    folderGroup.value = _folderMap.values.toList();
 
-    final keys = map.keys.toList()..sort();
+    /// artist
+    final artist =
+    song.artist.trim().isEmpty ? 'Unknown Artist' : song.artist;
 
-    return keys
-        .map((k) => AlbumGroup(albumName: k, songs: map[k]!))
-        .toList();
-  }
-
-
-  Future<List<ArtistGroup>> getByArtist() async {
-    final songs = await _getSongs();
-
-    final Map<String, List<Song>> map = {};
-
-    for (final song in songs) {
-      final artist = song.artist.isNotEmpty ? song.artist : 'Unknown Artist';
-      map.putIfAbsent(artist, () => []);
-      map[artist]!.add(song);
+    if (_artistMap.containsKey(artist)) {
+      _artistMap[artist]!.songs.add(song);
+    } else {
+      _artistMap[artist] = ArtistGroup(
+        artistName: artist,
+        songs: [song],
+      );
     }
 
-    map.values.forEach((list) {
-      list.sort((a, b) => a.title.compareTo(b.title));
-    });
+    artistGroup.value = _artistMap.values.toList();
 
-    final keys = map.keys.toList()..sort();
+    /// album
+    final album =
+    song.album.trim().isEmpty ? 'Unknown Album' : song.album;
 
-    return keys
-        .map((k) => ArtistGroup(artistName: k, songs: map[k]!))
-        .toList();
-  }
-
-
-  Future<List<AlphabetGroup>> getByAlphabet() async {
-    final songs = await _getSongs();
-
-    final Map<String, List<Song>> map = {};
-
-    for (final song in songs) {
-      final key = _getGroupKey(song.title);
-      map.putIfAbsent(key, () => []);
-      map[key]!.add(song);
+    if (_albumMap.containsKey(album)) {
+      _albumMap[album]!.songs.add(song);
+    } else {
+      _albumMap[album] = AlbumGroup(
+        albumName: album,
+        songs: [song],
+      );
     }
 
-    map.values.forEach((list) {
-      list.sort((a, b) => a.title.compareTo(b.title));
-    });
-
-    final sortedKeys = _sortAlphabetKeys(map.keys.toList());
-
-    return sortedKeys
-        .map((k) => AlphabetGroup(letter: k, songs: map[k]!))
-        .toList();
+    albumGroup.value = _albumMap.values.toList();
   }
 
-  String _getGroupKey(String text) {
-    if (text.isEmpty) return '#';
+  Future<void> _finishScan() async {
+    isLoading.value = false;
+    isScanned.value = true;
 
-    final char = text.trim()[0];
+    /// simpan ke cache setelah scan selesai
+    await MusicCacheService.saveSongs(songs.value);
 
-    if (RegExp(r'[A-Za-z]').hasMatch(char)) {
-      return char.toUpperCase();
-    }
+    _receivePort?.close();
+    _receivePort = null;
 
-    if (RegExp(r'[0-9]').hasMatch(char)) {
-      return '0-9';
-    }
-
-    return '#';
+    _isolate?.kill(priority: Isolate.immediate);
+    _isolate = null;
   }
 
-  List<String> _sortAlphabetKeys(List<String> keys) {
-    keys.sort((a, b) {
-      if (a == '0-9') return -1;
-      if (b == '0-9') return 1;
-      if (a == '#') return 1;
-      if (b == '#') return -1;
-      return a.compareTo(b);
-    });
+  Future<void> refreshSongs() async {
+    await MusicCacheService.clear(); // hapus cache
+    stopScan();
+    _reset();
+    await loadSongs();
+  }
 
-    return keys;
+  void stopScan() {
+    _receivePort?.close();
+    _receivePort = null;
+
+    _isolate?.kill(priority: Isolate.immediate);
+    _isolate = null;
+
+    isLoading.value = false;
+  }
+
+  void _reset() {
+    songs.value = [];
+
+    folderGroup.value = [];
+    artistGroup.value = [];
+    albumGroup.value = [];
+
+    _folderMap.clear();
+    _artistMap.clear();
+    _albumMap.clear();
+
+    isScanned.value = false;
+  }
+
+  void dispose() {
+    stopScan();
+
+    songs.dispose();
+    folderGroup.dispose();
+    artistGroup.dispose();
+    albumGroup.dispose();
+
+    isLoading.dispose();
+    isScanned.dispose();
   }
 }

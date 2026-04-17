@@ -1,14 +1,13 @@
 import 'dart:io';
+import 'dart:isolate';
 import 'package:audio_metadata_reader/audio_metadata_reader.dart';
 import '../models/song.dart';
 
 class MusicScanner {
-  static List<Song> scanMusicStrict(String dirPath) {
-    final dir = Directory(dirPath);
+  static void scanMusicStream(SendPort sendPort) {
+    final dir = Directory('C:\\Users');
 
-    final List<Song> songs = [];
     final Set<String> visitedPaths = {};
-
     final allowedExtensions = ['.mp3', '.wav', '.m4a', '.flac'];
 
     final skipFolders = [
@@ -40,14 +39,18 @@ class MusicScanner {
       try {
         final entities = directory.listSync(followLinks: true);
 
-        for (var entity in entities) {
+        for (final entity in entities) {
           try {
             final entityPathLower = entity.path.toLowerCase();
 
+            /// skip folder tertentu
             if (skipFolders.any(
                   (skip) => entityPathLower.contains(skip.toLowerCase()),
-            )) continue;
+            )) {
+              continue;
+            }
 
+            /// resolve symlink biar tidak loop
             String actualPath = entity.path;
 
             try {
@@ -61,14 +64,14 @@ class MusicScanner {
                 allowedExtensions.any(
                       (ext) => entity.path.toLowerCase().endsWith(ext),
                 )) {
-
               if (entity.statSync().size <= 1024) continue;
 
               final parentFolder = entity.parent.path.toLowerCase();
 
               final isAllowed =
                   allowedFolders.any(
-                        (allowed) => parentFolder.contains(allowed.toLowerCase()),
+                        (allowed) =>
+                        parentFolder.contains(allowed.toLowerCase()),
                   ) ||
                       ['music', 'song', 'audio', 'playlist']
                           .any((kw) => parentFolder.contains(kw));
@@ -77,20 +80,25 @@ class MusicScanner {
 
               final metadata = readMetadata(entity, getImage: false);
 
-              final title = metadata.title?.trim().isNotEmpty == true
+              final title =
+              metadata.title?.trim().isNotEmpty == true
                   ? metadata.title!
                   : entity.path.split(Platform.pathSeparator).last;
 
-              songs.add(
-                Song(
-                  path: entity.path,
-                  title: title,
-                  artist: metadata.artist ?? 'Unknown Artist',
-                  album: metadata.album ?? 'Unknown Album',
-                  duration: metadata.duration,
-                ),
+              final song = Song(
+                path: entity.path,
+                title: title,
+                artist: metadata.artist ?? 'Unknown Artist',
+                album: metadata.album ?? 'Unknown Album',
+                duration: metadata.duration,
               );
-            } else if (entity is Directory) {
+
+              /// kirim satu per satu realtime
+              sendPort.send(song);
+            }
+
+            /// folder lanjut scan
+            else if (entity is Directory) {
               scanDirectory(entity);
             }
           } catch (_) {}
@@ -100,6 +108,7 @@ class MusicScanner {
 
     scanDirectory(dir);
 
-    return songs;
+    /// tanda selesai
+    sendPort.send(null);
   }
 }

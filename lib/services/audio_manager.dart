@@ -30,17 +30,32 @@ class AudioManager {
     _player.onPlayerComplete.listen((_) async {
       position.value = Duration.zero;
 
+      if (queue.isEmpty) {
+        await _player.stop();
+        isPlaying.value = false;
+        currentSong.value = null;
+        return;
+      }
+
       if (queue.isLast) {
         await _player.stop();
         isPlaying.value = false;
       } else {
-        await playNext();
+        queue.next();
+        await playFromQueue();
       }
     });
   }
 
   // 🎵 Play dari queue
   Future<void> playFromQueue() async {
+    if (queue.songs.isEmpty) {
+      await _player.stop();
+      isPlaying.value = false;
+      currentSong.value = null;
+      return;
+    }
+
     final song = queue.currentSong;
     if (song == null) return;
 
@@ -72,6 +87,15 @@ class AudioManager {
     isPlaying.value = true;
   }
 
+  Future<void> stopAndClearCurrent() async {
+    await _player.stop();
+
+    currentSong.value = null;
+    isPlaying.value = false;
+    position.value = Duration.zero;
+    duration.value = Duration.zero;
+  }
+
   // ⏯ Toggle
   Future<void> toggle() async {
     if (isPlaying.value) {
@@ -80,6 +104,11 @@ class AudioManager {
       await _player.resume();
     }
     isPlaying.value = !isPlaying.value;
+  }
+
+  Future<void> playAt(int index) async {
+    queue.setIndex(index);
+    await playFromQueue();
   }
 
   // ⏭ Next

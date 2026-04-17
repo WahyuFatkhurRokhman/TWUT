@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:music_player/models/song.dart';
+import 'package:music_player/utils/navigation_utils.dart';
 import 'package:music_player/utils/time_utils.dart';
 import 'package:music_player/widgets/queue_drawer.dart';
 import '../services/audio_manager.dart';
@@ -33,7 +34,11 @@ class MusicPlayerPage extends StatelessWidget {
         valueListenable: audio.currentSong,
         builder: (_, song, __) {
           if (song == null) {
-            return const Center(child: Text("No song playing"));
+            WidgetsBinding.instance.addPostFrameCallback((_) {
+              NavigationUtil.popRoot(context);
+            });
+
+            return const SizedBox();
           }
 
           return Padding(

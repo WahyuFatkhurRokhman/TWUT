@@ -25,12 +25,12 @@ class _MainLayoutState extends State<MainLayout> {
       _selectedIndex = index;
     });
 
-    NavigationUtil.fadeReplace(
+    NavigationUtil.noAnimationReplaceAndRemove(
       context,
       CategoryGroupMusicPage(
         category: _categories[index],
       ),
-      root: false, // penting: nested
+      root: false,
     );
   }
 
@@ -78,7 +78,6 @@ class _MainLayoutState extends State<MainLayout> {
 
                   const VerticalDivider(thickness: 1, width: 1),
 
-                  /// 🔥 NESTED NAVIGATOR (tetap dipakai, tapi sekarang dikontrol page)
                   Expanded(
                     child: Navigator(
                       key: NavigationUtil.nestedKey,

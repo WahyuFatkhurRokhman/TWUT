@@ -6,7 +6,7 @@ class NavigationUtil {
   // ========== NESTED NAVIGATOR (MainLayout) ==========
 
   static final GlobalKey<NavigatorState> nestedKey =
-  GlobalKey<NavigatorState>();
+      GlobalKey<NavigatorState>();
 
   static NavigatorState? get _nested => nestedKey.currentState;
 
@@ -36,24 +36,21 @@ class NavigationUtil {
 
   /// Navigate ke Folder Music List
   static Future<T?>? toFolderMusic<T>(String folder) {
-    return pushNested<T>(
-      MainRoute.folderMusic,
-      arguments: {'folder': folder},
-    );
+    return pushNested<T>(MainRoute.folderMusic, arguments: {'folder': folder});
   }
 
   // ========== ROOT NAVIGATOR (Full App) ==========
 
   /// Push ke root navigator (music-player, dll)
   static Future<void> pushRoot(
-      BuildContext context,
-      String routeName, {
-        Object? arguments,
-      }) {
-    return Navigator.of(context, rootNavigator: true).pushNamed(
-      routeName,
-      arguments: arguments,
-    );
+    BuildContext context,
+    String routeName, {
+    Object? arguments,
+  }) {
+    return Navigator.of(
+      context,
+      rootNavigator: true,
+    ).pushNamed(routeName, arguments: arguments);
   }
 
   /// Pop dari root navigator
@@ -75,10 +72,10 @@ class NavigationUtil {
   /// Slide dari bawah
   /// [root] = true untuk root navigator, false untuk nested navigator
   static Future<T?> slideUp<T>(
-      BuildContext context,
-      Widget page, {
-        bool root = true,
-      }) {
+    BuildContext context,
+    Widget page, {
+    bool root = true,
+  }) {
     final navigator = root
         ? Navigator.of(context, rootNavigator: true)
         : _nested;
@@ -92,13 +89,10 @@ class NavigationUtil {
         pageBuilder: (_, __, ___) => page,
         transitionsBuilder: (_, animation, __, child) {
           return SlideTransition(
-            position: Tween(
-              begin: const Offset(0, 1),
-              end: Offset.zero,
-            ).animate(CurvedAnimation(
-              parent: animation,
-              curve: Curves.easeOut,
-            )),
+            position: Tween(begin: const Offset(0, 1), end: Offset.zero)
+                .animate(
+                  CurvedAnimation(parent: animation, curve: Curves.easeOut),
+                ),
             child: child,
           );
         },
@@ -109,10 +103,10 @@ class NavigationUtil {
   /// Slide dari kanan (left direction)
   /// [root] = true untuk root navigator, false untuk nested navigator
   static Future<T?> slideLeft<T>(
-      BuildContext context,
-      Widget page, {
-        bool root = true,
-      }) {
+    BuildContext context,
+    Widget page, {
+    bool root = true,
+  }) {
     final navigator = root
         ? Navigator.of(context, rootNavigator: true)
         : _nested;
@@ -126,13 +120,10 @@ class NavigationUtil {
         pageBuilder: (_, __, ___) => page,
         transitionsBuilder: (_, animation, __, child) {
           return SlideTransition(
-            position: Tween(
-              begin: const Offset(1, 0),
-              end: Offset.zero,
-            ).animate(CurvedAnimation(
-              parent: animation,
-              curve: Curves.easeOut,
-            )),
+            position: Tween(begin: const Offset(1, 0), end: Offset.zero)
+                .animate(
+                  CurvedAnimation(parent: animation, curve: Curves.easeOut),
+                ),
             child: child,
           );
         },
@@ -143,10 +134,10 @@ class NavigationUtil {
   /// Fade transition
   /// [root] = true untuk root navigator, false untuk nested navigator
   static Future<T?> fade<T>(
-      BuildContext context,
-      Widget page, {
-        bool root = true,
-      }) {
+    BuildContext context,
+    Widget page, {
+    bool root = true,
+  }) {
     final navigator = root
         ? Navigator.of(context, rootNavigator: true)
         : _nested;
@@ -168,10 +159,10 @@ class NavigationUtil {
   /// Fade transition (REPLACE) root / nested
   /// [root] = true untuk root navigator, false untuk nested navigator
   static Future<T?> fadeReplace<T>(
-      BuildContext context,
-      Widget page, {
-        bool root = true,
-      }) {
+    BuildContext context,
+    Widget page, {
+    bool root = true,
+  }) {
     final navigator = root
         ? Navigator.of(context, rootNavigator: true)
         : _nested;
@@ -195,6 +186,98 @@ class NavigationUtil {
       ),
     );
   }
+
+  static Future<T?> fadeReplaceAndRemove<T>(
+    BuildContext context,
+    Widget page, {
+    bool root = true,
+  }) {
+    final navigator = root
+        ? Navigator.of(context, rootNavigator: true)
+        : _nested;
+
+    if (navigator == null) {
+      throw Exception('Navigator not available');
+    }
+
+    return navigator.pushAndRemoveUntil<T>(
+      PageRouteBuilder(
+        pageBuilder: (_, __, ___) => page,
+        transitionDuration: const Duration(milliseconds: 300),
+        reverseTransitionDuration: const Duration(milliseconds: 300),
+        transitionsBuilder: (_, animation, __, child) {
+          return FadeTransition(
+            opacity: CurvedAnimation(
+              parent: animation,
+              curve: Curves.easeInOut,
+            ),
+            child: child,
+          );
+        },
+      ),
+      (route) => false,
+    );
+  }
+
+  static PageRouteBuilder<T> _noAnimationRoute<T>(Widget page) {
+    return PageRouteBuilder<T>(
+      pageBuilder: (_, __, ___) => page,
+      transitionDuration: Duration.zero,
+      reverseTransitionDuration: Duration.zero,
+      transitionsBuilder: (_, __, ___, child) => child,
+    );
+  }
+
+  // ========== PUSH TANPA ANIMASI ==========
+  /// root=true => root navigator
+  /// root=false => nested navigator
+  static Future<T?> noAnimation<T>(
+    BuildContext context,
+    Widget page, {
+    bool root = true,
+  }) {
+    final navigator = root
+        ? Navigator.of(context, rootNavigator: true)
+        : _nested;
+    if (navigator == null) {
+      throw Exception('Navigator not available');
+    }
+    return navigator.push<T>(_noAnimationRoute(page));
+  }
+
+  // ========== REPLACE TANPA ANIMASI ==========
+  static Future<T?> noAnimationReplace<T>(
+    BuildContext context,
+    Widget page, {
+    bool root = true,
+  }) {
+    final navigator = root
+        ? Navigator.of(context, rootNavigator: true)
+        : _nested;
+    if (navigator == null) {
+      throw Exception('Navigator not available');
+    }
+    return navigator.pushReplacement<T, T>(_noAnimationRoute(page));
+  }
+
+  // ========== REMOVE ALL + PUSH TANPA ANIMASI ==========
+  static Future<T?> noAnimationReplaceAndRemove<T>(
+    BuildContext context,
+    Widget page, {
+    bool root = true,
+  }) {
+    final navigator = root
+        ? Navigator.of(context, rootNavigator: true)
+        : _nested;
+    if (navigator == null) {
+      throw Exception('Navigator not available');
+    }
+    return navigator.pushAndRemoveUntil<T>(
+      _noAnimationRoute(page),
+      (route) => false,
+    );
+  }
+  // ========== UTIL ==========
 
   /// Cek apakah nested navigator bisa pop
   static bool canPopNested() => _nested?.canPop() ?? false;

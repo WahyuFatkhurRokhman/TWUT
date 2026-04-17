@@ -99,6 +99,8 @@ class PlayQueue {
 
     if (index < 0 || index >= list.length) return;
 
+    final isRemovingCurrent = index == _currentIndex.value;
+
     list.removeAt(index);
     _queue.value = list;
 
@@ -107,11 +109,16 @@ class PlayQueue {
       return;
     }
 
-    if (_currentIndex.value == index) {
-      if (index >= list.length) {
+    if (isRemovingCurrent) {
+      if (index < list.length) {
+        _currentIndex.value = index;
+      } else {
         _currentIndex.value = list.length - 1;
       }
-    } else if (index < _currentIndex.value) {
+      return;
+    }
+
+    if (index < _currentIndex.value) {
       _currentIndex.value--;
     }
   }

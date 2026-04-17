@@ -5,12 +5,16 @@ class QueueListTile extends StatefulWidget {
   final Song song;
   final bool isActive;
   final VoidCallback? onRemove; // 🔥 callback hapus
+  final VoidCallback? onTap;
+  final Widget? dragHandle;
 
   const QueueListTile({
     super.key,
     required this.song,
     this.isActive = false,
     this.onRemove,
+    this.onTap,
+    this.dragHandle,
   });
 
   @override
@@ -52,28 +56,16 @@ class _QueueListTileState extends State<QueueListTile> {
               ),
             ),
             child: ListTile(
+              onTap: widget.onTap,
+
               leading: widget.isActive
                   ? const Icon(Icons.equalizer, color: Colors.green)
-                  : const SizedBox(width: 24),
+                  : widget.dragHandle,
 
-              title: Text(
-                widget.song.title,
-                maxLines: 1,
-                overflow: TextOverflow.ellipsis,
-                style: TextStyle(
-                  fontWeight: widget.isActive
-                      ? FontWeight.bold
-                      : FontWeight.normal,
-                ),
-              ),
+              title: Text(widget.song.title),
 
-              subtitle: Text(
-                widget.song.artist,
-                maxLines: 1,
-                overflow: TextOverflow.ellipsis,
-              ),
+              subtitle: Text(widget.song.artist),
 
-              // 🔥 tombol titik tiga
               trailing: PopupMenuButton<String>(
                 icon: const Icon(Icons.more_vert),
                 onSelected: (value) {
