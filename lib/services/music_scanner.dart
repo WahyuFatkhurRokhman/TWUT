@@ -2,37 +2,24 @@ import 'dart:io';
 import 'dart:isolate';
 import 'package:audio_metadata_reader/audio_metadata_reader.dart';
 import '../models/song.dart';
+import '../utils/platform_util.dart';
 
 class MusicScanner {
   static void scanMusicStream(SendPort sendPort) {
-    final dir = Directory('C:\\Users');
+    final Directory dir = _getRootDirectory();
 
     final Set<String> visitedPaths = {};
     final allowedExtensions = ['.mp3', '.wav', '.m4a', '.flac'];
 
-    final skipFolders = [
-      'C:\\Users\\All Users',
-      'C:\\Users\\Default',
-      'C:\\Windows',
-      'C:\\Program Files',
-      'C:\\Program Files (x86)',
-      'C:\\ProgramData',
-      '\\AppData\\Local\\',
-      'Application Data',
-      '.cache',
-      'node_modules',
-      'test',
-      'lib',
-      'temp',
-    ];
+    final skipFolders = _getSkipFolders();
 
     final allowedFolders = [
-      'Music',
-      'Downloads',
-      'Documents',
-      'Desktop',
-      'Videos',
-      'OneDrive',
+      'music',
+      'downloads',
+      'documents',
+      'desktop',
+      'videos',
+      'onedrive',
     ];
 
     void scanDirectory(Directory directory) {
@@ -70,8 +57,7 @@ class MusicScanner {
 
               final isAllowed =
                   allowedFolders.any(
-                        (allowed) =>
-                        parentFolder.contains(allowed.toLowerCase()),
+                        (allowed) => parentFolder.contains(allowed),
                   ) ||
                       ['music', 'song', 'audio', 'playlist']
                           .any((kw) => parentFolder.contains(kw));
@@ -93,12 +79,8 @@ class MusicScanner {
                 duration: metadata.duration,
               );
 
-              /// kirim satu per satu realtime
               sendPort.send(song);
-            }
-
-            /// folder lanjut scan
-            else if (entity is Directory) {
+            } else if (entity is Directory) {
               scanDirectory(entity);
             }
           } catch (_) {}
@@ -108,7 +90,70 @@ class MusicScanner {
 
     scanDirectory(dir);
 
-    /// tanda selesai
     sendPort.send(null);
+  }
+
+  static Directory _getRootDirectory() {
+    if (PlatformUtil.isWindows) {
+      return Directory('C:\\Users');
+    }
+
+    if (PlatformUtil.isLinux) {
+      return Directory('/home');
+    }
+
+    if (PlatformUtil.isAndroid) {
+      return Directory('/storage/emulated/0');
+    }
+
+    throw UnsupportedError("Platform tidak didukung");
+  }
+
+  static List<String> _getSkipFolders() {
+    if (PlatformUtil.isWindows) {
+      return [
+        'C:\\Users\\All Users',
+        'C:\\Users\\Default',
+        'C:\\Windows',
+        'C:\\Program Files',
+        'C:\\Program Files (x86)',
+        'C:\\ProgramData',
+        '\\AppData\\Local\\',
+        'Application Data',
+        '.cache',
+        'node_modules',
+        'test',
+        'lib',
+        'temp',
+
+    ];
+    }
+
+    if (PlatformUtil.isLinux) {
+      return [
+        '/proc',
+        '/sys',
+        '/dev',
+        '/run',
+        '.cache',
+        'node_modules',
+        'test',
+        'lib',
+        'temp',
+      ];
+    }
+
+    if (PlatformUtil.isAndroid) {
+      return [
+        '/android/data',
+        '/android/obb',
+        '/cache',
+        'test',
+        'lib',
+        'temp',
+      ];
+    }
+
+    return [];
   }
 }
