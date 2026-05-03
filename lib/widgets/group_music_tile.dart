@@ -27,63 +27,80 @@ class GroupMusicTile extends StatelessWidget {
     if (groupMusic is ArtistGroup) return Colors.green;
     return Colors.purple;
   }
-  @override
-  Widget build(BuildContext context) {
-    return Material(
-      color: Colors.white,
-      borderRadius: BorderRadius.circular(12),
-      child: InkWell(
+
+@override
+Widget build(BuildContext context) {
+  return InkWell(
+    borderRadius: BorderRadius.circular(12),
+    onTap: onTap,
+    child: Container(
+      decoration: BoxDecoration(
         borderRadius: BorderRadius.circular(12),
-        onTap: onTap,
-        child: Center(
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            children: [
 
-              // 🔥 ICON 50x50 FIX 1:1
-              Container(
-                width: 50,
-                height: 50,
-                decoration: BoxDecoration(
-                  color: _getIconColor().withOpacity(0.15),
-                  borderRadius: BorderRadius.circular(12),
-                ),
-                child: Icon(
-                  _getLeadingIcon(),
-                  color: _getIconColor(),
-                  size: 26,
-                ),
+        // 🌌 Gradient gelap elegan
+        gradient: LinearGradient(
+          colors: [
+            Colors.white.withOpacity(0.10),
+            Colors.white.withOpacity(0.03),
+          ],
+          begin: Alignment.topLeft,
+          end: Alignment.bottomRight,
+        ),
+      ),
+      child: Row(
+        children: [
+          // 🎵 ICON BOX (kiri)
+          Container(
+            width: 70,
+            height: double.infinity,
+            decoration: BoxDecoration(
+              color: _getIconColor().withOpacity(0.2),
+              borderRadius: const BorderRadius.only(
+                topLeft: Radius.circular(12),
+                bottomLeft: Radius.circular(12),
               ),
+            ),
+            child: Icon(
+              _getLeadingIcon(),
+              color: _getIconColor(),
+              size: 28,
+            ),
+          ),
 
-              const SizedBox(height: 8),
+          const SizedBox(width: 12),
 
-              SizedBox(
-                width: 100,
-                child: Text(
+          // 📀 TEXT AREA
+          Expanded(
+            child: Column(
+              mainAxisAlignment: MainAxisAlignment.center,
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
                   groupMusic.displayName,
-                  textAlign: TextAlign.center,
                   style: const TextStyle(
-                    fontWeight: FontWeight.bold,
-                    fontSize: 12,
+                    color: Colors.white,
+                    fontWeight: FontWeight.w600,
+                    fontSize: 14,
                   ),
                   maxLines: 1,
                   overflow: TextOverflow.ellipsis,
                 ),
-              ),
 
-              const SizedBox(height: 2),
+                const SizedBox(height: 4),
 
-              Text(
-                '${groupMusic.songCount} Lagu',
-                style: TextStyle(
-                  fontSize: 11,
-                  color: Colors.grey[600],
+                Text(
+                  '${groupMusic.songCount} Lagu',
+                  style: TextStyle(
+                    color: Colors.white.withOpacity(0.6),
+                    fontSize: 12,
+                  ),
                 ),
-              ),
-            ],
+              ],
+            ),
           ),
-        ),
+        ],
       ),
-    );
-  }
+    ),
+  );
+}
 }

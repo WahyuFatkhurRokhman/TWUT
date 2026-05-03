@@ -1,8 +1,8 @@
 import 'dart:io';
 import 'dart:isolate';
 import 'package:audio_metadata_reader/audio_metadata_reader.dart';
-import '../models/song.dart';
-import '../utils/platform_util.dart';
+import 'package:music_player/models/song.dart';
+import 'package:music_player/utils/platform_util.dart';
 
 class MusicScanner {
   static void scanMusicStream(SendPort sendPort) {

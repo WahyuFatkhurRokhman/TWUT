@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
-import 'package:music_player/layouts/main_layout.dart';
+// import 'package:music_player/layouts/main_layout.dart';
+import 'package:music_player/desktop/desktop_main_pages.dart';
 import 'package:music_player/pages/music_player_page.dart';
 
 class RootRoute {
@@ -10,7 +11,7 @@ class RootRoute {
     switch (settings.name) {
       case mainLayout:
         return MaterialPageRoute(
-          builder: (_) => const MainLayout(),
+          builder: (_) => const DesktopMainPage(),
           settings: settings,
         );
 
@@ -26,7 +27,7 @@ class RootRoute {
   }
 
   static Map<String, WidgetBuilder> get routes => {
-    mainLayout: (context) => const MainLayout(),
+    mainLayout: (context) => const DesktopMainPage(),
     musicPlayer: (context) => const MusicPlayerPage(),
   };
 }

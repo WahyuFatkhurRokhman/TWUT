@@ -1,8 +1,7 @@
 import 'dart:convert';
 import 'dart:io';
+import 'package:music_player/models/song.dart';
 import 'package:path_provider/path_provider.dart';
-
-import '../models/song.dart';
 
 class MusicCacheService {
 

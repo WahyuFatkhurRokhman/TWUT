@@ -1,13 +1,13 @@
 import 'dart:io';
 import 'dart:isolate';
 import 'package:flutter/foundation.dart';
+import 'package:music_player/models/album_group.dart';
+import 'package:music_player/models/artist_group.dart';
+import 'package:music_player/models/folder_group.dart';
+import 'package:music_player/models/song.dart';
+import 'package:music_player/services/music_cache_service.dart';
+import 'package:music_player/services/music_scanner.dart';
 
-import '../models/song.dart';
-import '../models/folder_group.dart';
-import '../models/artist_group.dart';
-import '../models/album_group.dart';
-import '../services/music_scanner.dart';
-import '../services/music_cache_service.dart';
 
 class MusicService {
   MusicService._();

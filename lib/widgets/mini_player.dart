@@ -5,9 +5,27 @@ import 'package:music_player/pages/music_player_page.dart';
 import 'package:music_player/utils/navigation_utils.dart';
 import 'package:music_player/utils/time_utils.dart';
 import '../services/audio_manager.dart';
+import 'dart:ui';
 
-class MiniPlayer extends StatelessWidget {
+class MiniPlayer extends StatefulWidget {
   const MiniPlayer({super.key});
+
+  @override
+  State<MiniPlayer> createState() => _MiniPlayerState();
+}
+
+class _MiniPlayerState extends State<MiniPlayer> {
+  final audio = AudioManager();
+
+  final ValueNotifier<double?> _dragValue = ValueNotifier(null);
+  final ValueNotifier<bool> _isDragging = ValueNotifier(false);
+
+  @override
+  void dispose() {
+    _dragValue.dispose();
+    _isDragging.dispose();
+    super.dispose();
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -36,27 +54,29 @@ class MiniPlayer extends StatelessWidget {
 
                     Expanded(
                       child: Padding(
-                        padding: const EdgeInsets.symmetric(
-                          horizontal: 14,
-                        ),
-                        child: Row(
+                        padding: const EdgeInsets.symmetric(horizontal: 14),
+                        child: Stack(
                           children: [
-                            Expanded(
-                              flex: 4,
-                              child: _songInfo(song, theme),
-                            ),
-
-                            Expanded(
-                              flex: 3,
-                              child: Center(
-                                child: _controls(audio),
+                            // 🔹 LEFT: Song info
+                            Align(
+                              alignment: Alignment.centerLeft,
+                              child: SizedBox(
+                                width: 300, // opsional, biar stabil
+                                child: _songInfo(song, theme),
                               ),
                             ),
 
-                            Expanded(
-                              flex: 3,
-                              child: Align(
-                                alignment: Alignment.centerRight,
+                            // 🔹 CENTER: Controls (ABSOLUTE CENTER)
+                            Align(
+                              alignment: Alignment.center,
+                              child: _controls(audio),
+                            ),
+
+                            // 🔹 RIGHT: Volume, repeat, dll
+                            Align(
+                              alignment: Alignment.centerRight,
+                              child: SizedBox(
+                                width: 220, // opsional
                                 child: _rightSection(audio),
                               ),
                             ),
@@ -280,62 +300,107 @@ class MiniPlayer extends StatelessWidget {
     );
   }
 
-  Widget _progressBar(AudioManager audio) {
-    return ValueListenableBuilder<Duration>(
-      valueListenable: audio.position,
-      builder: (_, pos, __) {
-        final total = audio.duration.value.inSeconds.toDouble();
-        final current =
-        pos.inSeconds.clamp(0, total.toInt()).toDouble();
+Widget _progressBar(AudioManager audio) {
+  return ValueListenableBuilder<Duration>(
+    valueListenable: audio.position,
+    builder: (_, pos, __) {
+      return ValueListenableBuilder<Duration>(
+        valueListenable: audio.duration,
+        builder: (_, dur, __) {
+          return ValueListenableBuilder<bool>(
+            valueListenable: _isDragging,
+            builder: (_, isDragging, __) {
+              return ValueListenableBuilder<double?>(
+                valueListenable: _dragValue,
+                builder: (_, dragValue, __) {
+                  
+                  final max = dur.inMilliseconds.toDouble();
+                  final safeMax = max <= 0 ? 1.0 : max;
 
-        return Column(
-          children: [
-            SliderTheme(
-              data: SliderThemeData(
-                trackHeight: 3,
-                thumbShape: const RoundSliderThumbShape(
-                  enabledThumbRadius: 5,
-                ),
-                overlayShape: SliderComponentShape.noOverlay,
-              ),
-              child: Slider(
-                min: 0,
-                max: total > 0 ? total : 1,
-                value: current,
-                onChanged: (v) => audio.seek(v.toInt()),
-              ),
-            ),
+                  final current =
+                      pos.inMilliseconds.toDouble().clamp(0.0, safeMax);
 
-            Padding(
-              padding: const EdgeInsets.symmetric(
-                horizontal: 14,
-              ),
-              child: Row(
-                mainAxisAlignment:
-                MainAxisAlignment.spaceBetween,
-                children: [
-                  Text(
-                    TimeUtils.formatDuration(pos),
-                    style: const TextStyle(
-                      fontSize: 11,
-                      color: Colors.grey,
-                    ),
-                  ),
-                  Text(
-                    TimeUtils.formatDuration(
-                      audio.duration.value,
-                    ),
-                    style: const TextStyle(
-                      fontSize: 11,
-                      color: Colors.grey,
-                    ),
-                  ),
-                ],
-              ),
-            ),
-          ],
-        );
-      },
-    );
-  }
+                  // 🔥 Smooth transition
+                  final baseValue = isDragging
+                      ? (dragValue ?? 0)
+                      : current;
+
+                  final smoothValue = lerpDouble(
+                    _dragValue.value ?? current,
+                    baseValue,
+                    0.25, // semakin kecil = makin smooth
+                  ) ?? baseValue;
+
+                  return Column(
+                    children: [
+                      SliderTheme(
+                        data: const SliderThemeData(
+                          trackHeight: 3,
+                          thumbShape: RoundSliderThumbShape(
+                            enabledThumbRadius: 5,
+                          ),
+                          overlayShape:
+                              RoundSliderOverlayShape(overlayRadius: 0),
+                        ),
+                        child: Slider(
+                          min: 0,
+                          max: safeMax,
+                          value: smoothValue.clamp(0.0, safeMax),
+
+                          onChangeStart: (v) {
+                            _isDragging.value = true;
+                            _dragValue.value = v;
+                            audio.pause();
+                          },
+
+                          onChanged: (v) {
+                            _dragValue.value = v;
+                          },
+
+                          onChangeEnd: (v) async {
+                            if (dur.inMilliseconds == 0) return;
+
+                            await audio.seek(Duration(milliseconds: v.toInt()));
+                            await audio.resume();
+
+                            _isDragging.value = false;
+                            _dragValue.value = null;
+                          },
+                        ),
+                      ),
+
+                      Padding(
+                        padding: const EdgeInsets.symmetric(horizontal: 14),
+                        child: Row(
+                          mainAxisAlignment:
+                              MainAxisAlignment.spaceBetween,
+                          children: [
+                            Text(
+                              TimeUtils.formatDuration(pos),
+                              style: const TextStyle(
+                                fontSize: 11,
+                                color: Colors.grey,
+                              ),
+                            ),
+                            Text(
+                              TimeUtils.formatDuration(dur),
+                              style: const TextStyle(
+                                fontSize: 11,
+                                color: Colors.grey,
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                    ],
+                  );
+                },
+              );
+            },
+          );
+        },
+      );
+    },
+  );
+}
 }

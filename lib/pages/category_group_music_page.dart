@@ -99,21 +99,35 @@ class _CategoryGroupMusicPageState extends State<CategoryGroupMusicPage> {
             );
           }
 
-          return GridView.builder(
-            padding: const EdgeInsets.all(12),
-            itemCount: groups.length,
-            gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
-              crossAxisCount: 2,
-              crossAxisSpacing: 10,
-              mainAxisSpacing: 10,
-              mainAxisExtent: 120,
-            ),
-            itemBuilder: (context, index) {
-              final group = groups[index] as GroupMusic;
-
-              return GroupMusicTile(
-                groupMusic: group,
-                onTap: () => _openGroup(group),
+          return LayoutBuilder(
+            builder: (context, constraints) {
+              int crossAxisCount = 2;
+          
+              if (constraints.maxWidth > 1400) {
+                crossAxisCount = 6;
+              } else if (constraints.maxWidth > 1000) {
+                crossAxisCount = 4;
+              } else if (constraints.maxWidth > 700) {
+                crossAxisCount = 3;
+              }
+          
+              return GridView.builder(
+                padding: const EdgeInsets.all(16),
+                itemCount: groups.length,
+                gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
+                  crossAxisCount: crossAxisCount,
+                  crossAxisSpacing: 12,
+                  mainAxisSpacing: 12,
+                  childAspectRatio: 3.2,
+                ),
+                itemBuilder: (context, index) {
+                  final group = groups[index] as GroupMusic;
+          
+                  return GroupMusicTile(
+                    groupMusic: group,
+                    onTap: () => _openGroup(group),
+                  );
+                },
               );
             },
           );

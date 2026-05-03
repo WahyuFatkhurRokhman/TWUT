@@ -3,7 +3,7 @@ import 'package:audioplayers/audioplayers.dart';
 import 'package:flutter/foundation.dart';
 import 'package:audio_metadata_reader/audio_metadata_reader.dart';
 import 'package:music_player/models/constant/REPEAT_MODE.dart';
-import '../models/song.dart';
+import 'package:music_player/models/song.dart';
 import 'play_queue.dart';
 
 class AudioManager {
@@ -23,6 +23,7 @@ class AudioManager {
 
   bool _initialized = false;
   bool _queueEnded = false;
+  bool _isSeeking = false;
 
   void init() {
     if (_initialized) return;
@@ -39,6 +40,8 @@ class AudioManager {
     _player.setVolume(volume.value);
 
     _player.onPlayerComplete.listen((_) async {
+      if (_isSeeking) return;
+
       position.value = Duration.zero;
 
       final mode = repeatMode.value;
@@ -188,8 +191,15 @@ class AudioManager {
     await playFromQueue();
   }
 
-  Future<void> seek(int sec) async {
-    await _player.seek(Duration(seconds: sec));
+  Future<void> seekTo(Duration duration) async {
+    _isSeeking = true;
+
+    await _player.seek(duration);
+
+    // kasih jeda kecil biar event stabil
+    await Future.delayed(const Duration(milliseconds: 200));
+
+    _isSeeking = false;
   }
 
   Future<void> setVolume(double value) async {
@@ -213,7 +223,47 @@ class AudioManager {
     }
   }
 
+  Future<void> pause() async {
+  await _player.pause();
+  isPlaying.value = false;
+  }
+
+  Future<void> resume() async {
+    await _player.resume();
+    isPlaying.value = true;
+  }
+
+Future<void> seek(Duration position) async {
+  final max = duration.value;
+
+  if (max.inMilliseconds == 0) return;
+
+  final safePosition = Duration(
+    milliseconds: position.inMilliseconds.clamp(
+      0,
+      max.inMilliseconds,
+    ),
+  );
+
+  // 🎯 CASE: lagu sudah selesai
+  if (_queueEnded) {
+    _queueEnded = false;
+
+    final song = currentSong.value;
+    if (song == null) return;
+
+    await _player.play(DeviceFileSource(song.path));
+    await _player.seek(safePosition);
+
+    isPlaying.value = true;
+    return;
+  }
+
+  // 🎯 CASE NORMAL
+  await _player.seek(safePosition);
+}
+
   void dispose() {
-    _player.dispose();
+      _player.dispose();
   }
 }

@@ -1,7 +1,7 @@
 import 'dart:math';
 import 'package:flutter/foundation.dart';
 import 'package:music_player/models/group_music.dart';
-import '../models/song.dart';
+import 'package:music_player/models/song.dart';
 
 class PlayQueue {
   static final PlayQueue _instance = PlayQueue._internal();
