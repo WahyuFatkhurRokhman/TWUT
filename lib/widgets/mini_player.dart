@@ -15,7 +15,6 @@ class MiniPlayer extends StatefulWidget {
 }
 
 class _MiniPlayerState extends State<MiniPlayer> {
-  final audio = AudioManager();
 
   final ValueNotifier<double?> _dragValue = ValueNotifier(null);
   final ValueNotifier<bool> _isDragging = ValueNotifier(false);

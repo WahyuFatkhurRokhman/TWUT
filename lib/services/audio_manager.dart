@@ -1,269 +1,199 @@
-import 'dart:io';
-import 'package:audioplayers/audioplayers.dart';
 import 'package:flutter/foundation.dart';
-import 'package:audio_metadata_reader/audio_metadata_reader.dart';
+import 'package:music_player/models/constant/PLAYBACK_SOURCE.dart';
 import 'package:music_player/models/constant/REPEAT_MODE.dart';
+import 'package:music_player/models/group_music.dart';
 import 'package:music_player/models/song.dart';
-import 'play_queue.dart';
+import 'package:music_player/models/yt_song.dart';
+import 'package:music_player/services/local_player_manager.dart';
+import 'package:music_player/services/play_queue.dart';
+import 'package:music_player/services/player_manager.dart';
+import 'package:music_player/services/youtube_player_manager.dart';
+import 'package:youtube_player_flutter/youtube_player_flutter.dart';
 
 class AudioManager {
   static final AudioManager _instance = AudioManager._internal();
   factory AudioManager() => _instance;
   AudioManager._internal();
 
-  final AudioPlayer _player = AudioPlayer();
-  final PlayQueue queue = PlayQueue();
+  final local   = LocalPlayerManager();
+  final youtube = YoutubePlayerManager();
 
-  final currentSong = ValueNotifier<Song?>(null);
-  final isPlaying = ValueNotifier(false);
-  final position = ValueNotifier(Duration.zero);
-  final duration = ValueNotifier(Duration.zero);
-  final volume = ValueNotifier(1.0);
-  final repeatMode = ValueNotifier(REPEAT_MODE.OFF);
+  final activeSource = ValueNotifier(PlaybackSource.local);
+  final repeatMode   = ValueNotifier(REPEAT_MODE.OFF);
+  final volume       = ValueNotifier(1.0);
 
-  bool _initialized = false;
-  bool _queueEnded = false;
-  bool _isSeeking = false;
+
+  PlayQueue get queue => local.queue;
+
+  ValueNotifier<Song?> get currentSong => local.currentSong;
+
+  ValueNotifier<YtSong?> get currentYtSong => youtube.currentYtSong;
+
+  ValueNotifier<bool>     get isPlaying => _active.isPlaying;
+  ValueNotifier<Duration> get position  => _active.position;
+  ValueNotifier<Duration> get duration  => _active.duration;
+
+  YoutubePlayerController? get ytController => youtube.controller;
+
+  PlayerManager get _active =>
+      activeSource.value == PlaybackSource.local ? local : youtube;
 
   void init() {
-    if (_initialized) return;
-    _initialized = true;
-
-    _player.onDurationChanged.listen((d) {
-      duration.value = d;
-    });
-
-    _player.onPositionChanged.listen((p) {
-      position.value = p;
-    });
-
-    _player.setVolume(volume.value);
-
-    _player.onPlayerComplete.listen((_) async {
-      if (_isSeeking) return;
-
-      position.value = Duration.zero;
-
-      final mode = repeatMode.value;
-
-      // repeat satu lagu
-      if (mode == REPEAT_MODE.ONE) {
-        await playFromQueue();
-        return;
-      }
-
-      // queue kosong
-      if (queue.isEmpty) {
-        await stopAndClearCurrent();
-        return;
-      }
-
-
-      // lagu terakhir selesai
-      if (queue.isLast) {
-        if (mode == REPEAT_MODE.ALL) {
-          queue.setIndex(0);
-          await playFromQueue();
-          return;
-        }
-
-        await _player.stop();
-        isPlaying.value = false;
-        _queueEnded = true;
-        return;
-      }
-
-      // lanjut next
-      queue.next();
-      await playFromQueue();
-    });
+    local.init();
+    local.onTrackComplete   = _handleLocalTrackComplete;
+    youtube.onTrackComplete = _handleYoutubeTrackComplete;
   }
 
-  Future<void> playFromQueue() async {
-    if (queue.isEmpty) {
-      await stopAndClearCurrent();
-      return;
-    }
+  // ── LOCAL playback ────────────────────────────────────────────────────────
+  Future<void> playLocalGroup(GroupMusic group, {int startIndex = 0}) async {
+    await _stopOther(PlaybackSource.local);
+    activeSource.value = PlaybackSource.local;
 
-    final song = queue.currentSong;
-    if (song == null) return;
-
-    await _playSong(song);
+    local.queue.addFolder(group);
+    local.queue.setIndex(startIndex);
+    await local.play();
   }
 
-  // ===============================
-  // CORE PLAY
-  // ===============================
-  Future<void> _playSong(Song song) async {
-    final file = File(song.path);
-    final metadata = readMetadata(file, getImage: true);
+  Future<void> playLocalSong(Song song) async {
+    await _stopOther(PlaybackSource.local);
+    activeSource.value = PlaybackSource.local;
 
-    final newSong = Song(
-      path: song.path,
-      title: metadata.title ?? song.title,
-      artist: metadata.artist ?? 'Unknown Artist',
-      album: metadata.album ?? 'Unknown Album',
-      artwork: metadata.pictures.isNotEmpty
-          ? metadata.pictures.first.bytes
-          : null,
-    );
-
-    currentSong.value = newSong;
-
-    await _player.stop();
-    await _player.play(DeviceFileSource(song.path));
-
-    isPlaying.value = true;
-    _queueEnded = false;
+    local.queue.addSong(song);
+    await local.play();
   }
 
-  Future<void> stopAndClearCurrent() async {
-    await _player.stop();
+  Future<void> playFromQueue() async => local.play();
 
-    currentSong.value = null;
-    isPlaying.value = false;
-    position.value = Duration.zero;
-    duration.value = Duration.zero;
+  // ── YOUTUBE playback ──────────────────────────────────────────────────────
+  Future<void> playYtSong(YtSong song) async {
+    await _stopOther(PlaybackSource.youtube);
+    activeSource.value = PlaybackSource.youtube;
 
-    _queueEnded = false;
+    youtube.loadQueue([song]);
+    await youtube.play();
+  }
+
+  Future<void> playYtQueue(List<YtSong> songs, {int startIndex = 0}) async {
+    await _stopOther(PlaybackSource.youtube);
+    activeSource.value = PlaybackSource.youtube;
+
+    youtube.loadQueue(songs, startIndex: startIndex);
+    await youtube.play();
   }
 
   Future<void> toggle() async {
-    // sedang play -> pause
-    if (isPlaying.value) {
-      await _player.pause();
-      isPlaying.value = false;
-      return;
-    }
-
-    // queue selesai
-    if (_queueEnded) {
-      if (repeatMode.value == REPEAT_MODE.ALL) {
-        queue.setIndex(0);
-      }
-
-      await playFromQueue();
-      return;
-    }
-
-    // belum ada lagu
-    if (currentSong.value == null) {
-      await playFromQueue();
-      return;
-    }
-
-    // resume pause
-    await _player.resume();
-    isPlaying.value = true;
+    _active.isPlaying.value ? await _active.pause() : await _active.resume();
   }
 
+  Future<void> pause()  async => _active.pause();
+  Future<void> resume() async => _active.resume();
+  Future<void> seekTo(Duration pos) => _active.seek(pos);
+
+  Future<void> seek(Duration pos) => seekTo(pos);
+
   Future<void> playAt(int index) async {
-    queue.setIndex(index);
-    await playFromQueue();
+    local.queue.setIndex(index);
+    await local.play();
   }
 
   Future<void> playNext() async {
-    if (queue.isEmpty) return;
-
-    if (queue.isLast) {
-      if(queue.shuffleMode.value){
-        queue.refreshShuffle();
-        queue.setIndex(1);
-      }else{
-        queue.setIndex(0);
+    if (activeSource.value == PlaybackSource.local) {
+      if (local.queue.isLast) {
+        local.queue.setIndex(0);
+      } else {
+        local.queue.next();
       }
-    }else  {
-      queue.next();
+      await local.play();
+    } else {
+      if (!youtube.hasNext) youtube.setIndex(0);
+      else youtube.next();
+      await youtube.play();
     }
-
-    await playFromQueue();
   }
 
   Future<void> playPrevious() async {
-    if (queue.isEmpty) return;
-
-    if (queue.isFirst) {
-      queue.setIndex(queue.songs.length - 1);
+    if (activeSource.value == PlaybackSource.local) {
+      if (local.queue.isFirst) {
+        local.queue.setIndex(local.queue.songs.length - 1);
+      } else {
+        local.queue.previous();
+      }
+      await local.play();
     } else {
-      queue.previous();
+      if (!youtube.hasPrev) youtube.setIndex(youtube.queue.length - 1);
+      else youtube.previous();
+      await youtube.play();
     }
-
-    await playFromQueue();
   }
 
-  Future<void> seekTo(Duration duration) async {
-    _isSeeking = true;
-
-    await _player.seek(duration);
-
-    // kasih jeda kecil biar event stabil
-    await Future.delayed(const Duration(milliseconds: 200));
-
-    _isSeeking = false;
+  Future<void> stopAndClearCurrent() async {
+    await _active.stop();
+    activeSource.value = PlaybackSource.local;
   }
 
   Future<void> setVolume(double value) async {
     volume.value = value.clamp(0.0, 1.0);
-    await _player.setVolume(volume.value);
+    await local.setVolume(volume.value);
   }
 
   void toggleRepeatMode() {
     switch (repeatMode.value) {
-      case REPEAT_MODE.OFF:
-        repeatMode.value = REPEAT_MODE.ALL;
-        break;
+      case REPEAT_MODE.OFF: repeatMode.value = REPEAT_MODE.ALL;  break;
+      case REPEAT_MODE.ALL: repeatMode.value = REPEAT_MODE.ONE;  break;
+      case REPEAT_MODE.ONE: repeatMode.value = REPEAT_MODE.OFF;  break;
+    }
+  }
 
-      case REPEAT_MODE.ALL:
-        repeatMode.value = REPEAT_MODE.ONE;
-        break;
+  void toggleShuffle() => local.queue.toggleShuffle();
 
+  // ── internal ──────────────────────────────────────────────────────────────
+  Future<void> _stopOther(PlaybackSource next) async {
+    if (activeSource.value != next) await _active.stop();
+  }
+
+  void _handleLocalTrackComplete() {
+    switch (repeatMode.value) {
       case REPEAT_MODE.ONE:
-        repeatMode.value = REPEAT_MODE.OFF;
+        local.play();
+        break;
+      case REPEAT_MODE.ALL:
+        if (local.queue.isLast) local.queue.setIndex(0);
+        else local.queue.next();
+        local.play();
+        break;
+      case REPEAT_MODE.OFF:
+        if (!local.queue.isLast) {
+          local.queue.next();
+          local.play();
+        }
         break;
     }
   }
 
-  Future<void> pause() async {
-  await _player.pause();
-  isPlaying.value = false;
+  void _handleYoutubeTrackComplete() {
+    switch (repeatMode.value) {
+      case REPEAT_MODE.ONE:
+        youtube.play();
+        break;
+      case REPEAT_MODE.ALL:
+        if (!youtube.hasNext) youtube.setIndex(0);
+        else youtube.next();
+        youtube.play();
+        break;
+      case REPEAT_MODE.OFF:
+        if (youtube.hasNext) {
+          youtube.next();
+          youtube.play();
+        }
+        break;
+    }
   }
-
-  Future<void> resume() async {
-    await _player.resume();
-    isPlaying.value = true;
-  }
-
-Future<void> seek(Duration position) async {
-  final max = duration.value;
-
-  if (max.inMilliseconds == 0) return;
-
-  final safePosition = Duration(
-    milliseconds: position.inMilliseconds.clamp(
-      0,
-      max.inMilliseconds,
-    ),
-  );
-
-  // 🎯 CASE: lagu sudah selesai
-  if (_queueEnded) {
-    _queueEnded = false;
-
-    final song = currentSong.value;
-    if (song == null) return;
-
-    await _player.play(DeviceFileSource(song.path));
-    await _player.seek(safePosition);
-
-    isPlaying.value = true;
-    return;
-  }
-
-  // 🎯 CASE NORMAL
-  await _player.seek(safePosition);
-}
 
   void dispose() {
-      _player.dispose();
+    local.dispose();
+    youtube.dispose();
+    activeSource.dispose();
+    repeatMode.dispose();
+    volume.dispose();
   }
 }

@@ -1,0 +1,5 @@
+enum YT_TYPE {
+  VIDEO,
+  PLAYLIST,
+  CHANNEL
+}
