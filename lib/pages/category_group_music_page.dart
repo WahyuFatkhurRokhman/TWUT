@@ -4,6 +4,7 @@ import 'package:music_player/services/music_service.dart';
 import 'package:music_player/widgets/group_music_tile.dart';
 import 'package:music_player/utils/navigation_utils.dart';
 import 'package:music_player/pages/group_music_list_page.dart';
+//import 'package:music_player/utils/group_music_helper.dart';
 
 class CategoryGroupMusicPage extends StatefulWidget {
   final String category; // folder / album / artist
@@ -24,7 +25,13 @@ class _CategoryGroupMusicPageState extends State<CategoryGroupMusicPage> {
   @override
   void initState() {
     super.initState();
+
     _musicService.loadSongs();
+
+    // 🔥 TAMBAHKAN DI SINI
+    if (widget.category != 'folder') {
+      _musicService.selectedGroup.value = null;
+    }
   }
 
   /// ambil notifier sesuai kategori
@@ -57,33 +64,33 @@ class _CategoryGroupMusicPageState extends State<CategoryGroupMusicPage> {
     final notifier = _groupNotifier();
 
     return Scaffold(
-      appBar: AppBar(
-        title: Text(widget.category.toUpperCase()),
-        actions: [
-          ValueListenableBuilder<bool>(
-            valueListenable: _musicService.isLoading,
-            builder: (context, loading, _) {
-              if (loading) {
-                return const Padding(
-                  padding: EdgeInsets.all(12),
-                  child: SizedBox(
-                    width: 22,
-                    height: 22,
-                    child: CircularProgressIndicator(
-                      strokeWidth: 2.2,
-                    ),
-                  ),
-                );
-              }
+      // appBar: AppBar(
+      //   title: Text(widget.category.toUpperCase()),
+      //   actions: [
+      //     ValueListenableBuilder<bool>(
+      //       valueListenable: _musicService.isLoading,
+      //       builder: (context, loading, _) {
+      //         if (loading) {
+      //           return const Padding(
+      //             padding: EdgeInsets.all(12),
+      //             child: SizedBox(
+      //               width: 22,
+      //               height: 22,
+      //               child: CircularProgressIndicator(
+      //                 strokeWidth: 2.2,
+      //               ),
+      //             ),
+      //           );
+      //         }
 
-              return IconButton(
-                icon: const Icon(Icons.refresh),
-                onPressed: _musicService.refreshSongs,
-              );
-            },
-          ),
-        ],
-      ),
+      //         return IconButton(
+      //           icon: const Icon(Icons.refresh),
+      //           onPressed: _musicService.refreshSongs,
+      //         );
+      //       },
+      //     ),
+      //   ],
+      // ),
       body: ValueListenableBuilder<List<dynamic>>(
         valueListenable: notifier,
         builder: (context, groups, _) {
@@ -125,7 +132,14 @@ class _CategoryGroupMusicPageState extends State<CategoryGroupMusicPage> {
           
                   return GroupMusicTile(
                     groupMusic: group,
-                    onTap: () => _openGroup(group),
+                    onTap: () {
+                      _musicService.selectedGroup.value = group;
+                  
+                      // optional: debug / log
+                      //debugPrint("Selected: ${getGroupTitle(group)}");
+                  
+                      _openGroup(group);
+                    },
                   );
                 },
               );

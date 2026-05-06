@@ -4,6 +4,7 @@ import 'package:flutter/foundation.dart';
 import 'package:music_player/models/album_group.dart';
 import 'package:music_player/models/artist_group.dart';
 import 'package:music_player/models/folder_group.dart';
+import 'package:music_player/models/group_music.dart';
 import 'package:music_player/models/song.dart';
 import 'package:music_player/services/music_cache_service.dart';
 import 'package:music_player/services/music_scanner.dart';
@@ -24,6 +25,7 @@ class MusicService {
   /// STATE
   final ValueNotifier<bool> isLoading = ValueNotifier(false);
   final ValueNotifier<bool> isScanned = ValueNotifier(false);
+  final ValueNotifier<GroupMusic?> selectedGroup = ValueNotifier(null);
 
   ReceivePort? _receivePort;
   Isolate? _isolate;
