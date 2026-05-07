@@ -3,7 +3,7 @@ import 'package:http/http.dart' as http;
 import 'package:music_player/utils/device_id_util.dart';
 
 class ApiService {
-  static const String baseUrl = "https://twut-backend.vercel.app";
+  static const String baseUrl = "https://twut-backend.vercel.app/api";
   static const String xApiKey = "tugas_cak_nanang";
 
   static Future<dynamic> get(

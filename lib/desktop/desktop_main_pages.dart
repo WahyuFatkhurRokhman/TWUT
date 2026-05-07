@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:music_player/desktop/youtube_page.dart';
 import 'package:music_player/widgets/mini_player.dart';
 import 'sidebar_desktop.dart';
 import 'local_page.dart';
@@ -16,6 +17,7 @@ class _DesktopMainPageState extends State<DesktopMainPage> {
   final pages = [
     Container(), // Home (kosong, sesuai permintaan tuan)
     const LocalPage(),
+    const YoutubePage(),
   ];
 
 @override
@@ -39,7 +41,15 @@ Widget build(BuildContext context) {
               child: Padding(
                 // ⬇️ kasih ruang biar konten gak ketutup mini player
                 padding: const EdgeInsets.only(bottom: 108),
-                child: pages[selectedIndex],
+
+                child: (selectedIndex >= 0 &&
+                        selectedIndex < pages.length)
+                    ? pages[selectedIndex]
+                    : const Center(
+                        child: Text(
+                          "Halaman tidak ditemukan",
+                        ),
+                      ),
               ),
             ),
           ],

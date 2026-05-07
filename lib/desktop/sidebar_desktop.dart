@@ -54,6 +54,7 @@ class SidebarDesktop extends StatelessWidget {
 
           _sideItem(Icons.home_outlined, "Home", 0),
           _sideItem(Icons.folder_outlined, "Local", 1),
+          _sideItem(Icons.smart_display_outlined, "Youtube", 2),
 
           const Spacer(),
         ],
