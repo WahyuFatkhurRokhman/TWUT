@@ -1,13 +1,13 @@
-// import 'dart:isolate';
 import 'package:flutter/material.dart';
 import 'package:music_player/config/app_colors.dart';
+import 'package:music_player/models/album_group.dart';
+import 'package:music_player/models/artist_group.dart';
+import 'package:music_player/models/group_music.dart';
 import 'package:music_player/pages/category_group_music_page.dart';
 import 'package:music_player/routes/main_route.dart';
+import 'package:music_player/services/music_service.dart';
 import 'package:music_player/utils/navigation_utils.dart';
-// import 'package:music_player/widgets/mini_player.dart';
-// import 'package:path/path.dart' as p;
-// import 'package:music_player/models/song.dart';
-// import 'package:music_player/services/music_scanner.dart';
+import 'package:music_player/utils/group_music_helper.dart';
 
 class LocalPage extends StatefulWidget {
   const LocalPage({super.key});
@@ -18,12 +18,30 @@ class LocalPage extends StatefulWidget {
 
 class _LocalPageState extends State<LocalPage> {
   int _selectedIndex = 0;
+  bool isInSubPage = false;
+  String selectedFilter = "folder";
+  GroupMusic? selectedFolder;
+  AlbumGroup? selectedAlbum;
+  ArtistGroup? selectedArtist;
+  bool get isInFolderDetail =>
+    selectedFilter == "folder" && musicService.selectedGroup.value != null;
 
   final List<String> _categories = [
     "folder",
     "album",
     "artist",
   ];
+
+  final List<String> _labels = [
+    "Folder",
+    "Album",
+    "Artists",
+  ];
+
+  MusicService get musicService => MusicService.instance;
+
+//\  String get _currentCategory => _categories[_selectedIndex];
+  String get _currentLabel => _labels[_selectedIndex];
 
   void _openCategory(int index) {
     setState(() {
@@ -39,138 +57,234 @@ class _LocalPageState extends State<LocalPage> {
     );
   }
 
+  void _openInitial() {
+    NavigationUtil.fadeReplace(
+      context,
+      CategoryGroupMusicPage(category: _categories[_selectedIndex]),
+      root: false,
+    );
+  }
+
+  void resetSelection() {
+    selectedFolder = null;
+    selectedAlbum = null;
+    selectedArtist = null;
+  }
+
+  void onFilterChanged(String filter) {
+    selectedFilter = filter;
+    _selectedIndex = _categories.indexOf(filter);
+
+    resetSelection();
+    musicService.selectedGroup.value = null;
+
+    setState(() {});
+  }
+
   @override
   void initState() {
     super.initState();
 
     WidgetsBinding.instance.addPostFrameCallback((_) {
-      NavigationUtil.fadeReplace(
-        context,
-        CategoryGroupMusicPage(category: _categories[0]),
-        root: false,
-      );
+      _openInitial();
     });
   }
+  
 
-Widget _buildTopFilter() {
-  final labels = ["folder", "album", "artis"];
+Widget _buildLeftSection() {
+  return Row(
+    mainAxisSize: MainAxisSize.min,
+    children: [
+      // IconButton(
+      //   onPressed: () {
+      //     // reset saat back
+      //     musicService.selectedGroup.value = null;
 
-  return Padding(
-    padding: const EdgeInsets.symmetric(vertical: 16),
-    child: Center(
-      child: Row(
-        mainAxisSize: MainAxisSize.min,
-        children: List.generate(labels.length, (index) {
-          final isSelected = _selectedIndex == index;
+      //     if (NavigationUtil.nestedKey.currentState?.canPop() ?? false) {
+      //       NavigationUtil.nestedKey.currentState?.pop();
+      //     } else {
+      //       Navigator.pop(context);
+      //     }
+      //   },
+      //   icon: const Icon(Icons.arrow_back),
+      // ),
 
-          return GestureDetector(
-            onTap: () {
-              setState(() {
-                _selectedIndex = index;
-              });
+      /// 🔥 INI YANG DIUBAH
+      ValueListenableBuilder<GroupMusic?>(
+        valueListenable: musicService.selectedGroup,
+        builder: (context, group, _) {
+          return Row(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              /// ✅ BACK BUTTON HANYA MUNCUL JIKA SUDAH MASUK
+              if (group != null)
+                IconButton(
+                  onPressed: () {
+                    musicService.selectedGroup.value = null;
+                    resetSelection();
 
-              _openCategory(index);
-            },
-            child: AnimatedContainer(
-              duration: const Duration(milliseconds: 250),
-              margin: const EdgeInsets.symmetric(horizontal: 6),
-              padding: const EdgeInsets.symmetric(horizontal: 18, vertical: 10),
-              decoration: BoxDecoration(
-                color: isSelected
-                    ? AppColors.accent            // 🟢 aktif
-                    : AppColors.surface,          // 🌑 nonaktif
-                borderRadius: BorderRadius.circular(20),
-              ),
-              child: Text(
-                labels[index],
-                style: TextStyle(
-                  color: isSelected
-                      ? Colors.black              // kontras di hijau
-                      : AppColors.textPrimary,    // putih di abu
-                  fontWeight: FontWeight.w600,
+                    if (NavigationUtil.nestedKey.currentState?.canPop() ?? false) {
+                      NavigationUtil.nestedKey.currentState?.pop();
+                    } else {
+                      Navigator.pop(context);
+                    }
+                  },
+                  icon: const Icon(Icons.arrow_back),
+                ),
+
+              /// TITLE
+              ConstrainedBox(
+                constraints: const BoxConstraints(maxWidth: 140),
+                child: Text(
+                  group != null ? getGroupTitle(group) : _currentLabel,
+                  overflow: TextOverflow.ellipsis,
+                  maxLines: 1,
+                  style: const TextStyle(
+                    fontSize: 16,
+                    fontWeight: FontWeight.w700,
+                  ),
                 ),
               ),
-            ),
+            ],
           );
-        }),
+        },
+      )
+    ],
+  );
+}
+
+Widget _buildMiddleSection() {
+  return SingleChildScrollView(
+    scrollDirection: Axis.horizontal,
+    child: Row(
+      mainAxisSize: MainAxisSize.min,
+      children: List.generate(_labels.length, (index) {
+        final isSelected = _selectedIndex == index;
+
+        return GestureDetector(
+          onTap: () {
+            final filter = _categories[index];
+
+            onFilterChanged(filter);
+
+            // 🔥 DELAY BIAR BUILD SELESAI DULU
+            WidgetsBinding.instance.addPostFrameCallback((_) {
+              _openCategory(index);
+            });
+          },
+          child: AnimatedContainer(
+            duration: const Duration(milliseconds: 250),
+            margin: const EdgeInsets.symmetric(horizontal: 4),
+            padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+            decoration: BoxDecoration(
+              color: isSelected ? AppColors.accent : AppColors.surface,
+              borderRadius: BorderRadius.circular(20),
+            ),
+            child: Text(
+              _labels[index],
+              style: TextStyle(
+                color: isSelected ? Colors.black : AppColors.textPrimary,
+                fontWeight: FontWeight.w600,
+                fontSize: 12,
+              ),
+            ),
+          ),
+        );
+      }),
+    ),
+  );
+}
+
+Widget _buildRightSection() {
+  return ValueListenableBuilder<bool>(
+    valueListenable: musicService.isLoading,
+    builder: (context, isLoading, _) {
+      if (isLoading) {
+        return const Padding(
+          padding: EdgeInsets.all(12),
+          child: SizedBox(
+            width: 20,
+            height: 20,
+            child: CircularProgressIndicator(strokeWidth: 2),
+          ),
+        );
+      }
+
+      return IconButton(
+        icon: const Icon(Icons.refresh),
+        onPressed: () async {
+          await musicService.refreshSongs();
+        },
+      );
+    },
+  );
+}
+
+Widget buildTopBar() {
+  return Padding(
+    padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
+    child: SizedBox(
+      height: 48,
+      child: Stack(
+        children: [
+          /// LEFT
+          Align(
+            alignment: Alignment.centerLeft,
+            child: _buildLeftSection(),
+          ),
+
+          /// CENTER (FILTER TRUE CENTER)
+          Align(
+            alignment: Alignment.center,
+            child: _buildMiddleSection(),
+          ),
+
+          /// RIGHT
+          Align(
+            alignment: Alignment.centerRight,
+            child: _buildRightSection(),
+          ),
+        ],
       ),
     ),
   );
 }
-//   Widget _buildSearchBar() {
-//   return Padding(
-//     padding: const EdgeInsets.symmetric(horizontal: 20),
-//     child: Container(
-//       height: 50,
-//       decoration: BoxDecoration(
-//         color: Color(0xFF1E1E1E),
-//         borderRadius: BorderRadius.circular(30),
-//       ),
-//       child: TextField(
-//         style: TextStyle(color: Colors.white),
-//         decoration: InputDecoration(
-//           hintText: "Search music...",
-//           hintStyle: TextStyle(color: Colors.grey),
-//           border: InputBorder.none,
-//           prefixIcon: Icon(Icons.search, color: Colors.grey),
-//         ),
-//       ),
-//     ),
-//   );
-// }
 
   @override
   Widget build(BuildContext context) {
-  return Scaffold(
-    backgroundColor: AppColors.background,
-    body: SafeArea(
-      child: Column(
-        children: [
-          Expanded(
-            child: Container(
-              decoration: const BoxDecoration( 
-                gradient: LinearGradient(
-                   colors: [
-                     Color(0xFF000000),
-                     Color(0xFF121212),
-                     Color(0xFF000000), 
-                     ],
-                    begin: Alignment.topLeft,
-                    end: Alignment.bottomRight, 
-                    ),
-                  ),
-              // decoration: const BoxDecoration(
-              //   color: AppColors.card,
-              //   borderRadius: const BorderRadius.vertical(
-              //     bottom: Radius.circular(16),
-              //     ),
-              //   ),
+    return Scaffold(
+      backgroundColor: AppColors.background,
+      body: SafeArea(
+        child: Container(
+          decoration: const BoxDecoration(
+            gradient: LinearGradient(
+              colors: [
+                Color(0xFF000000),
+                Color(0xFF121212),
+                Color(0xFF000000),
+              ],
+              begin: Alignment.topLeft,
+              end: Alignment.bottomRight,
+            ),
+          ),
+          child: Column(
+            children: [
+              buildTopBar(),
 
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    _buildTopFilter(),
-                    const SizedBox(height: 5),
+              const SizedBox(height: 5),
 
-                    // _buildSearchBar(), // ✅ SEARCH MASUK SINI
-
-                    // const SizedBox(height: 16),
-
-                    Expanded(
-                      child: Navigator(
-                        key: NavigationUtil.nestedKey,
-                        initialRoute: MainRoute.home,
-                        onGenerateRoute: MainRoute.generateRoute,
-                        onUnknownRoute: MainRoute.onUnknownRoute,
-                        ),
-                      ),
-                    ],
-                  ),
+              Expanded(
+                child: Navigator(
+                  key: NavigationUtil.nestedKey,
+                  initialRoute: MainRoute.home,
+                  onGenerateRoute: MainRoute.generateRoute,
+                  onUnknownRoute: MainRoute.onUnknownRoute,
                 ),
               ),
             ],
           ),
         ),
-      );
-    }
+      ),
+    );
   }
+}

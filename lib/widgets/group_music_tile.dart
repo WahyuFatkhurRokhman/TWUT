@@ -3,6 +3,7 @@ import 'package:music_player/models/group_music.dart';
 import 'package:music_player/models/folder_group.dart';
 import 'package:music_player/models/album_group.dart';
 import 'package:music_player/models/artist_group.dart';
+import 'package:music_player/utils/group_music_helper.dart';
 
 class GroupMusicTile extends StatelessWidget {
   final GroupMusic groupMusic;
@@ -76,7 +77,7 @@ Widget build(BuildContext context) {
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 Text(
-                  groupMusic.displayName,
+                  getGroupTitle(groupMusic),
                   style: const TextStyle(
                     color: Colors.white,
                     fontWeight: FontWeight.w600,
