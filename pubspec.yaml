@@ -40,6 +40,8 @@ dependencies:
   path_provider: ^2.1.5
   http: ^1.2.0
   youtube_player_flutter: ^9.0.0
+  shared_preferences: ^2.2.3
+  uuid: ^4.4.0
 
 dev_dependencies:
   flutter_test:
