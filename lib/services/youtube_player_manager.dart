@@ -31,15 +31,16 @@ class YoutubePlayerManager implements PlayerManager {
   // =========================
   // CONTROLLER
   // =========================
+
   void _initController(String videoId) {
     if (_controller == null) {
       _controller = YoutubePlayerController(
         initialVideoId: videoId,
         flags: const YoutubePlayerFlags(autoPlay: true),
       );
-
       _controller!.addListener(_onUpdate);
     } else {
+      _isCompletedCalled = false;
       _controller!.load(videoId);
     }
   }
@@ -65,11 +66,12 @@ class YoutubePlayerManager implements PlayerManager {
   // =========================
   // QUEUE
   // =========================
+
   void loadQueue(List<YtSong> songs, {int startIndex = 0}) {
     queue
       ..clear()
       ..addAll(songs);
-    _queueIndex = startIndex;
+    _queueIndex = startIndex.clamp(0, songs.isEmpty ? 0 : songs.length - 1);
   }
 
   YtSong? get currentSong =>
@@ -81,25 +83,30 @@ class YoutubePlayerManager implements PlayerManager {
   bool get hasPrev => _queueIndex > 0;
 
   // =========================
-  // CONTROL (implements PlayerManager)
+  // CONTROL
   // =========================
+
   @override
   Future<void> play() async {
     final song = currentSong;
     if (song == null || song.type != YT_TYPE.VIDEO) return;
 
     currentYtSong.value = song;
+    _isCompletedCalled = false;
+    print("callaed");
     _initController(song.id);
   }
 
   @override
   Future<void> pause() async {
     _controller?.pause();
+    isPlaying.value = false;
   }
 
   @override
   Future<void> resume() async {
     _controller?.play();
+    isPlaying.value = true;
   }
 
   @override
@@ -112,15 +119,17 @@ class YoutubePlayerManager implements PlayerManager {
     _controller?.pause();
     _controller?.seekTo(Duration.zero);
 
-    isPlaying.value = false;
-    position.value  = Duration.zero;
-    duration.value  = Duration.zero;
+    isPlaying.value     = false;
+    position.value      = Duration.zero;
+    duration.value      = Duration.zero;
     currentYtSong.value = null;
+    _isCompletedCalled  = false;
   }
 
   // =========================
   // NAVIGATION
   // =========================
+
   Future<void> next() async {
     if (hasNext) {
       _queueIndex++;
@@ -144,6 +153,7 @@ class YoutubePlayerManager implements PlayerManager {
   // =========================
   // DISPOSE
   // =========================
+
   @override
   void dispose() {
     _controller?.removeListener(_onUpdate);

@@ -1,7 +1,8 @@
 import 'package:flutter/material.dart';
+import 'package:music_player/models/now_playing_media.dart';
 import 'package:music_player/services/audio_manager.dart';
+import 'package:music_player/services/play_queue.dart';
 import 'package:music_player/utils/snackbar_util.dart';
-import '../services/play_queue.dart';
 import 'queue_list_tile.dart';
 
 class QueueDrawer extends StatefulWidget {
@@ -12,86 +13,95 @@ class QueueDrawer extends StatefulWidget {
 }
 
 class _QueueDrawerState extends State<QueueDrawer> {
-  final AudioManager audio = AudioManager();
-  late final PlayQueue queue = audio.queue;
+  final AudioManager _audio = AudioManager();
+  late final PlayQueue _queue = _audio.queue;
 
-  final ScrollController scrollController = ScrollController();
+  final ScrollController _scrollController = ScrollController();
 
   @override
   void initState() {
     super.initState();
-
-    WidgetsBinding.instance.addPostFrameCallback((_) {
-      _scrollToActive();
-    });
+    WidgetsBinding.instance.addPostFrameCallback((_) => _scrollToActive());
   }
 
   void _scrollToActive() {
-    final current = queue.currentIndex.value;
+    final current = _queue.currentIndex.value;
 
-    if (current < 0 || !scrollController.hasClients) return;
+    if (current < 0 || !_scrollController.hasClients) return;
 
-    const itemHeight = 72.0; // sesuaikan jika tinggi tile berbeda
-    final offset = current * itemHeight;
+    const itemHeight = 72.0;
 
-    scrollController.animateTo(
+    final offset = (current * itemHeight).clamp(
+      0.0,
+      _scrollController.position.maxScrollExtent,
+    );
+
+    _scrollController.animateTo(
       offset,
       duration: const Duration(milliseconds: 400),
       curve: Curves.easeOut,
     );
   }
 
-  void _onRemove(BuildContext context, int index) async {
-    final song = queue.songs[index];
+  Future<void> _onRemove(BuildContext context, int index) async {
+    final medias = _queue.queue.value;
 
-    final isCurrent = queue.currentSong == song;
-    final isLastSong = queue.songs.length == 1;
+    if (index < 0 || index >= medias.length) return;
+
+    final media = medias[index];
+
+    final isCurrent = index == _queue.currentIndex.value;
+    final isLastSong = medias.length == 1;
 
     if (isLastSong) {
-      await audio.stopAndClearCurrent();
+      await _audio.stopAndClearCurrent();
 
-      if (Navigator.of(context).canPop()) {
+      if (context.mounted && Navigator.of(context).canPop()) {
         Navigator.of(context).pop();
       }
     } else if (isCurrent) {
-      await audio.playNext();
+      await _audio.playNext();
     }
 
-    queue.removeAt(index);
+    _queue.removeAt(index);
 
-    SnackbarUtil.showSuccess(
-      context,
-      message: '${song.title} berhasil dihapus dari antrian.',
-    );
+    if (context.mounted) {
+      SnackbarUtil.showSuccess(
+        context,
+        message: '${media.title} berhasil dihapus dari antrian.',
+      );
+    }
   }
 
   void _confirmClear(BuildContext context) {
     showDialog(
       context: context,
       builder: (_) => AlertDialog(
-        title: const Text("Menutup antrian?"),
+        title: const Text('Menutup antrian?'),
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(context),
-            child: const Text("Batal"),
+            child: const Text('Batal'),
           ),
           TextButton(
             onPressed: () async {
               Navigator.pop(context);
 
-              queue.clear();
-              await audio.stopAndClearCurrent();
+              _queue.clear();
+              await _audio.stopAndClearCurrent();
 
-              if (Navigator.of(context).canPop()) {
+              if (context.mounted && Navigator.of(context).canPop()) {
                 Navigator.of(context).pop();
               }
 
-              SnackbarUtil.showSuccess(
-                context,
-                message: "Berhasil menutup antrian",
-              );
+              if (context.mounted) {
+                SnackbarUtil.showSuccess(
+                  context,
+                  message: 'Berhasil menutup antrian',
+                );
+              }
             },
-            child: const Text("Hapus"),
+            child: const Text('Hapus'),
           ),
         ],
       ),
@@ -100,7 +110,7 @@ class _QueueDrawerState extends State<QueueDrawer> {
 
   @override
   void dispose() {
-    scrollController.dispose();
+    _scrollController.dispose();
     super.dispose();
   }
 
@@ -110,13 +120,17 @@ class _QueueDrawerState extends State<QueueDrawer> {
       child: SafeArea(
         child: Column(
           children: [
+            // Header
             Padding(
-              padding: const EdgeInsets.all(16),
+              padding: const EdgeInsets.symmetric(
+                horizontal: 16,
+                vertical: 12,
+              ),
               child: Row(
                 mainAxisAlignment: MainAxisAlignment.spaceBetween,
                 children: [
                   const Text(
-                    "Daftar Putar",
+                    'Daftar Putar',
                     style: TextStyle(
                       fontSize: 20,
                       fontWeight: FontWeight.bold,
@@ -124,44 +138,52 @@ class _QueueDrawerState extends State<QueueDrawer> {
                   ),
                   IconButton(
                     icon: const Icon(Icons.delete_outline),
-                    onPressed: () {
-                      _confirmClear(context);
-                    },
+                    tooltip: 'Hapus antrian',
+                    onPressed: () => _confirmClear(context),
                   ),
                 ],
               ),
             ),
 
+            const Divider(height: 1),
+
+            // Queue list
             Expanded(
-              child: ValueListenableBuilder<List>(
-                valueListenable: queue.queue,
-                builder: (_, songs, __) {
+              child: ValueListenableBuilder<List<NowPlayingMedia>>(
+                valueListenable: _queue.queue,
+                builder: (_, medias, __) {
+                  if (medias.isEmpty) {
+                    return const Center(
+                      child: Text(
+                        'Antrian kosong',
+                        style: TextStyle(color: Colors.grey),
+                      ),
+                    );
+                  }
+
                   return ValueListenableBuilder<int>(
-                    valueListenable: queue.currentIndex,
-                    builder: (_, current, __) {
-                      WidgetsBinding.instance.addPostFrameCallback((_) {
-                        _scrollToActive();
-                      });
+                    valueListenable: _queue.currentIndex,
+                    builder: (_, currentIndex, __) {
+                      WidgetsBinding.instance.addPostFrameCallback(
+                            (_) => _scrollToActive(),
+                      );
 
                       return ReorderableListView.builder(
-                        scrollController: scrollController,
+                        scrollController: _scrollController,
                         buildDefaultDragHandles: false,
-                        itemCount: songs.length,
-                        onReorder: queue.reorder,
+                        itemCount: medias.length,
+                        onReorder: _queue.reorder,
                         itemBuilder: (context, index) {
-                          final song = songs[index];
+                          final media = medias[index];
+                          final isActive = index == currentIndex;
 
                           return Container(
-                            key: ValueKey(song.path),
+                            key: ValueKey('${media.sourceId}_$index'),
                             child: QueueListTile(
-                              song: song,
-                              isActive: index == current,
-                              onTap: () async {
-                                await audio.playAt(index);
-                              },
-                              onRemove: () {
-                                _onRemove(context, index);
-                              },
+                              media: media,
+                              isActive: isActive,
+                              onTap: () => _audio.playAt(index),
+                              onRemove: () => _onRemove(context, index),
                               dragHandle: ReorderableDragStartListener(
                                 index: index,
                                 child: const Icon(Icons.drag_handle),

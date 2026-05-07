@@ -1,4 +1,5 @@
 import 'package:music_player/models/constant/YT_TYPE.dart';
+import 'package:music_player/models/now_playing_media.dart';
 
 class YtSong {
   final String id;
@@ -36,6 +37,17 @@ class YtSong {
       default:
         return YT_TYPE.VIDEO;
     }
+  }
+
+  NowPlayingMedia toNowPlaying() {
+    return NowPlayingMedia(
+      id: id,
+      sourceId: id,
+      title: title,
+      artist: channelTitle ?? 'Youtube',
+      artworkUrl: thumbnail,
+      isYoutube: true,
+    );
   }
 
   static String _typeToString(YT_TYPE type) {

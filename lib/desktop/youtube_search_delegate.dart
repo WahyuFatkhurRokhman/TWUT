@@ -1,25 +1,15 @@
 import 'package:flutter/material.dart';
+
 import 'package:music_player/models/constant/YT_TYPE.dart';
+import 'package:music_player/models/yt_response.dart';
+import 'package:music_player/models/yt_song.dart';
+import 'package:music_player/pages/music_player_page.dart';
+
+import 'package:music_player/services/audio_manager.dart';
 import 'package:music_player/services/youtube_service.dart';
-
+import 'package:music_player/utils/navigation_utils.dart';
 class YoutubeSearchDelegate extends SearchDelegate {
-  List<dynamic> results = [];
-  bool isLoading = false;
-
-  Future<void> _search() async {
-    if (query.trim().isEmpty) return;
-
-    isLoading = true;
-
-    final response = await YoutubeService.search(
-      query: query,
-      type: YT_TYPE.VIDEO,
-    );
-
-    results = response.results;
-
-    isLoading = false;
-  }
+  final AudioManager audioManager = AudioManager();
 
   @override
   String? get searchFieldLabel => "Search YouTube Music";
@@ -28,13 +18,8 @@ class YoutubeSearchDelegate extends SearchDelegate {
   ThemeData appBarTheme(BuildContext context) {
     return ThemeData.dark().copyWith(
       scaffoldBackgroundColor: Colors.black,
-      appBarTheme: const AppBarTheme(
-        backgroundColor: Colors.black,
-        elevation: 0,
-      ),
-      inputDecorationTheme: const InputDecorationTheme(
-        border: InputBorder.none,
-      ),
+      appBarTheme: const AppBarTheme(backgroundColor: Colors.black, elevation: 0),
+      inputDecorationTheme: const InputDecorationTheme(border: InputBorder.none),
     );
   }
 
@@ -43,11 +28,7 @@ class YoutubeSearchDelegate extends SearchDelegate {
     return [
       IconButton(
         icon: const Icon(Icons.clear),
-        onPressed: () {
-          query = "";
-          results.clear();
-          showSuggestions(context);
-        },
+        onPressed: () => query = "",
       ),
     ];
   }
@@ -62,44 +43,45 @@ class YoutubeSearchDelegate extends SearchDelegate {
 
   @override
   Widget buildResults(BuildContext context) {
-    return FutureBuilder(
-      future: _search(),
+    if (query.trim().isEmpty) return const SizedBox();
+
+    return FutureBuilder<YtListResponse>(
+      future: YoutubeService.search(query: query, type: YT_TYPE.VIDEO),
       builder: (context, snapshot) {
-        if (isLoading) {
-          return const Center(
-            child: CircularProgressIndicator(),
-          );
+        if (snapshot.connectionState == ConnectionState.waiting) {
+          return const Center(child: CircularProgressIndicator());
         }
+        if (snapshot.hasError) {
+          return Center(child: Text("Error: ${snapshot.error}", style: const TextStyle(color: Colors.red)));
+        }
+        if (!snapshot.hasData || snapshot.data!.results.isEmpty) {
+          return const Center(child: Text("No result found", style: TextStyle(color: Colors.white54)));
+        }
+
+        final results = snapshot.data!.results;
 
         return ListView.builder(
           itemCount: results.length,
           itemBuilder: (context, index) {
-            final item = results[index];
-
-            final snippet = item.snippet;
-            final thumbnail = snippet.thumbnails.high.url;
-
+            final song = results[index];
             return ListTile(
+              contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
               leading: ClipRRect(
                 borderRadius: BorderRadius.circular(8),
-                child: Image.network(
-                  thumbnail,
-                  width: 60,
-                  fit: BoxFit.cover,
-                ),
+                child: Image.network(song.thumbnail, width: 60, height: 60, fit: BoxFit.cover),
               ),
-              title: Text(
-                snippet.title,
-                maxLines: 1,
-                overflow: TextOverflow.ellipsis,
-              ),
-              subtitle: Text(
-                snippet.channelTitle ?? "",
-                maxLines: 1,
-                overflow: TextOverflow.ellipsis,
-              ),
-              onTap: () {
-                /// TODO: play music
+              title: Text(song.title, maxLines: 1, overflow: TextOverflow.ellipsis),
+              subtitle: Text(song.channelTitle ?? "", style: const TextStyle(color: Colors.white70)),
+              onTap: () async {
+                await audioManager.playYtSong(song);
+
+                close(context, null);
+
+                NavigationUtil.slideUp(
+                  context,
+                  const MusicPlayerPage(),
+                  root: true,
+                );
               },
             );
           },
@@ -109,12 +91,5 @@ class YoutubeSearchDelegate extends SearchDelegate {
   }
 
   @override
-  Widget buildSuggestions(BuildContext context) {
-    return const Center(
-      child: Text(
-        "Search music...",
-        style: TextStyle(color: Colors.white54),
-      ),
-    );
-  }
+  Widget buildSuggestions(BuildContext context) => const SizedBox();
 }

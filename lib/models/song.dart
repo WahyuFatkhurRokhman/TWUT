@@ -1,5 +1,7 @@
 import 'dart:typed_data';
 
+import 'package:music_player/models/now_playing_media.dart';
+
 class Song {
   final String path;
   final String title;
@@ -27,6 +29,18 @@ class Song {
       'album': album,
       'duration': duration?.inMilliseconds,
     };
+  }
+
+  NowPlayingMedia toNowPlaying() {
+    return NowPlayingMedia(
+      id: path,
+      sourceId: path,
+      title: title,
+      artist: artist,
+      artworkBytes: artwork,
+      duration: duration,
+      isYoutube: false,
+    );
   }
 
   factory Song.fromJson(Map<String, dynamic> json) {

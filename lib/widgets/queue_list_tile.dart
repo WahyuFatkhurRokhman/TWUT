@@ -1,16 +1,16 @@
 import 'package:flutter/material.dart';
-import '../models/song.dart';
+import '../models/now_playing_media.dart';
 
 class QueueListTile extends StatefulWidget {
-  final Song song;
+  final NowPlayingMedia media;
   final bool isActive;
-  final VoidCallback? onRemove; // 🔥 callback hapus
+  final VoidCallback? onRemove;
   final VoidCallback? onTap;
   final Widget? dragHandle;
 
   const QueueListTile({
     super.key,
-    required this.song,
+    required this.media,
     this.isActive = false,
     this.onRemove,
     this.onTap,
@@ -63,13 +63,13 @@ class _QueueListTileState extends State<QueueListTile> {
                   : widget.dragHandle,
 
               title: Text(
-                widget.song.title,
+                widget.media.title,
                 maxLines: 1,
                 overflow: TextOverflow.ellipsis,
               ),
 
               subtitle: Text(
-                widget.song.artist,
+                widget.media.artist,
                 maxLines: 1,
                 overflow: TextOverflow.ellipsis,
               ),
