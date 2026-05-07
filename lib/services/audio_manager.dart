@@ -12,8 +12,6 @@ import 'package:music_player/services/play_queue.dart';
 import 'package:music_player/services/player_manager.dart';
 import 'package:music_player/services/youtube_player_manager.dart';
 
-import 'package:youtube_player_flutter/youtube_player_flutter.dart';
-
 class AudioManager {
   static final AudioManager _instance = AudioManager._internal();
 
@@ -32,12 +30,10 @@ class AudioManager {
 
   PlayQueue get queue => local.queue;
 
-  ValueNotifier<Song?> get currentSong => local.currentSong;
-  ValueNotifier<bool>     get isPlaying => _active.isPlaying;
-  ValueNotifier<Duration> get position  => _active.position;
-  ValueNotifier<Duration> get duration  => _active.duration;
-
-  YoutubePlayerController? get ytController => youtube.controller;
+  ValueNotifier<Song?>    get currentSong => local.currentSong;
+  ValueNotifier<bool>     get isPlaying   => _active.isPlaying;
+  ValueNotifier<Duration> get position    => _active.position;
+  ValueNotifier<Duration> get duration    => _active.duration;
 
   PlayerManager get _active =>
       activeSource.value == PlaybackSource.local ? local : youtube;
@@ -103,7 +99,6 @@ class AudioManager {
 
     youtube.loadQueue(songs, startIndex: startIndex);
     await youtube.play();
-
     final yt = youtube.currentSong;
     if (yt != null) currentMedia.value = yt.toNowPlaying();
   }
@@ -142,7 +137,6 @@ class AudioManager {
         _updateYoutubeIndex(forward: true);
       }
 
-      // FIX: selalu panggil play() setelah setIndex/next
       await youtube.play();
 
       final yt = youtube.currentSong;
@@ -169,7 +163,6 @@ class AudioManager {
         _updateYoutubeIndex(forward: false);
       }
 
-      // FIX: selalu panggil play() setelah setIndex/previous
       await youtube.play();
 
       final yt = youtube.currentSong;
@@ -177,7 +170,6 @@ class AudioManager {
     }
   }
 
-  /// Play lagu berdasarkan index di queue (local)
   Future<void> playAt(int index) async {
     if (activeSource.value != PlaybackSource.local) {
       await _stopOther(PlaybackSource.local);
@@ -191,7 +183,6 @@ class AudioManager {
     if (song != null) currentMedia.value = song.toNowPlaying();
   }
 
-  /// Play dari queue yang sudah diset sebelumnya (local)
   Future<void> playFromQueue() async {
     await _stopOther(PlaybackSource.local);
     activeSource.value = PlaybackSource.local;
@@ -202,11 +193,8 @@ class AudioManager {
     if (song != null) currentMedia.value = song.toNowPlaying();
   }
 
-
-  /// Helper agar tidak double-increment/decrement saat next/previous
   void _updateYoutubeIndex({required bool forward}) {
-    final current = youtube.queue.indexOf(youtube.currentSong!);
-    final next = (current + (forward ? 1 : -1))
+    final next = (youtube.currentIndex + (forward ? 1 : -1))
         .clamp(0, youtube.queue.length - 1);
     youtube.setIndex(next);
   }
@@ -275,8 +263,6 @@ class AudioManager {
         break;
     }
   }
-
-
 
   void dispose() {
     local.dispose();

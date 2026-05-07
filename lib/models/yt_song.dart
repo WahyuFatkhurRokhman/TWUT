@@ -74,4 +74,12 @@ class YtSong {
   static List<YtSong> listFromJson(List<dynamic> data) {
     return data.map((e) => YtSong.fromJson(e)).toList();
   }
+
+  @override
+  bool operator ==(Object other) =>
+      identical(this, other) ||
+          other is YtSong && runtimeType == other.runtimeType && id == other.id;
+
+  @override
+  int get hashCode => id.hashCode;
 }

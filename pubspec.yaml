@@ -39,9 +39,22 @@ dependencies:
   audio_metadata_reader: ^1.4.2
   path_provider: ^2.1.5
   http: ^1.2.0
-  youtube_player_flutter: ^9.0.0
+#  youtube_player_flutter: ^9.0.0
+#  youtube_player_iframe: ^5.2.1
+  youtube_explode_dart: ^3.0.5
+  just_audio: ^0.10.5
+  just_audio_media_kit: ^2.1.0
+  media_kit: ^1.2.6 # Primary package.
+  media_kit_video: ^2.0.1 # For video rendering.
+  media_kit_libs_video: ^1.0.7 # Native video dependencies.
+  media_kit_libs_audio: ^1.0.7 # Native audio dependencies.
   shared_preferences: ^2.2.3
   uuid: ^4.4.0
+
+dependency_overrides:
+  media_kit_libs_linux: any
+  media_kit_libs_windows_audio: any
+  media_kit_libs_android_audio: any
 
 dev_dependencies:
   flutter_test:

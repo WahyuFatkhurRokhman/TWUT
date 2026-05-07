@@ -3,12 +3,21 @@ import 'package:music_player/config/app_theme.dart';
 import 'package:music_player/routes/root_route.dart';
 import 'package:music_player/services/audio_manager.dart';
 import 'package:music_player/utils/platform_util.dart';
+import 'package:flutter/material.dart';
 
-void main() {
+import 'package:media_kit/media_kit.dart';
+
+import 'package:music_player/config/app_theme.dart';
+import 'package:music_player/routes/root_route.dart';
+import 'package:music_player/services/audio_manager.dart';
+import 'package:music_player/utils/platform_util.dart';
+
+Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
   PlatformUtil.ensureSupported();
+  MediaKit.ensureInitialized();
 
-  print("Running on: ${PlatformUtil.name}");
+  debugPrint("Running on: ${PlatformUtil.name}");
   AudioManager().init();
 
   runApp(const MyApp());

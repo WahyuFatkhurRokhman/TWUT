@@ -1,8 +1,12 @@
+import 'dart:async';
+
 import 'package:flutter/foundation.dart';
-import 'package:music_player/services/player_manager.dart';
-import 'package:youtube_player_flutter/youtube_player_flutter.dart';
-import 'package:music_player/models/yt_song.dart';
+import 'package:just_audio/just_audio.dart';
+import 'package:youtube_explode_dart/youtube_explode_dart.dart';
+
 import 'package:music_player/models/constant/YT_TYPE.dart';
+import 'package:music_player/models/yt_song.dart';
+import 'package:music_player/services/player_manager.dart';
 
 class YoutubePlayerManager implements PlayerManager {
   static final YoutubePlayerManager _instance =
@@ -10,155 +14,245 @@ class YoutubePlayerManager implements PlayerManager {
 
   factory YoutubePlayerManager() => _instance;
 
-  YoutubePlayerManager._internal();
+  YoutubePlayerManager._internal() {
+    _initListeners();
+  }
 
-  YoutubePlayerController? _controller;
-  YoutubePlayerController? get controller => _controller;
+  // =====================================================
+  // PLAYER
+  // =====================================================
 
-  @override final isPlaying = ValueNotifier(false);
-  @override final position  = ValueNotifier(Duration.zero);
-  @override final duration  = ValueNotifier(Duration.zero);
+  // Lazy-initialized to avoid MissingPluginException during startup
+  // (platform channels may not be ready when the singleton is first created)
+  AudioPlayer? _playerInstance;
 
-  final currentYtSong = ValueNotifier<YtSong?>(null);
+  AudioPlayer get _player {
+    _playerInstance ??= AudioPlayer();
+    return _playerInstance!;
+  }
 
-  final queue = <YtSong>[];
+  final YoutubeExplode _yt = YoutubeExplode();
+
+  dynamic get controller => null;
+
+  bool _isDisposed = false;
+
+  // =====================================================
+  // VALUE NOTIFIER
+  // =====================================================
+
+  @override
+  final ValueNotifier<bool> isPlaying = ValueNotifier(false);
+
+  @override
+  final ValueNotifier<Duration> position = ValueNotifier(Duration.zero);
+
+  @override
+  final ValueNotifier<Duration> duration = ValueNotifier(Duration.zero);
+
+  final ValueNotifier<YtSong?> currentYtSong = ValueNotifier(null);
+
+  // =====================================================
+  // QUEUE
+  // =====================================================
+
+  final List<YtSong> queue = [];
+
   int _queueIndex = -1;
+
+  int get currentIndex => _queueIndex;
 
   void Function()? onTrackComplete;
 
-  bool _isCompletedCalled = false;
-
-  // =========================
-  // CONTROLLER
-  // =========================
-
-  void _initController(String videoId) {
-    if (_controller == null) {
-      _controller = YoutubePlayerController(
-        initialVideoId: videoId,
-        flags: const YoutubePlayerFlags(autoPlay: true),
-      );
-      _controller!.addListener(_onUpdate);
-    } else {
-      _isCompletedCalled = false;
-      _controller!.load(videoId);
+  YtSong? get currentSong {
+    if (_queueIndex < 0 || _queueIndex >= queue.length) {
+      return null;
     }
+    return queue[_queueIndex];
   }
 
-  void _onUpdate() {
-    final c = _controller;
-    if (c == null) return;
+  bool get hasNext => _queueIndex < queue.length - 1;
 
-    isPlaying.value = c.value.isPlaying;
-    position.value  = c.value.position;
-    duration.value  = c.metadata.duration;
+  bool get hasPrev => _queueIndex > 0;
 
-    if (c.value.playerState == PlayerState.ended) {
-      if (!_isCompletedCalled) {
-        _isCompletedCalled = true;
+  // =====================================================
+  // INIT LISTENER
+  // =====================================================
+
+  void _initListeners() {
+    _player.playingStream.listen((playing) {
+      if (_isDisposed) return;
+      isPlaying.value = playing;
+    });
+
+    _player.positionStream.listen((pos) {
+      if (_isDisposed) return;
+      position.value = pos;
+    });
+
+    _player.durationStream.listen((dur) {
+      if (_isDisposed) return;
+      duration.value = dur ?? Duration.zero;
+    });
+
+    _player.playerStateStream.listen((state) {
+      if (_isDisposed) return;
+      if (state.processingState == ProcessingState.completed) {
         onTrackComplete?.call();
       }
-    } else {
-      _isCompletedCalled = false;
-    }
+    });
   }
 
-  // =========================
-  // QUEUE
-  // =========================
+  // =====================================================
+  // QUEUE CONTROL
+  // =====================================================
 
   void loadQueue(List<YtSong> songs, {int startIndex = 0}) {
     queue
       ..clear()
       ..addAll(songs);
-    _queueIndex = startIndex.clamp(0, songs.isEmpty ? 0 : songs.length - 1);
+    setIndex(startIndex);
   }
 
-  YtSong? get currentSong =>
-      (_queueIndex >= 0 && _queueIndex < queue.length)
-          ? queue[_queueIndex]
-          : null;
+  void setIndex(int index) {
+    if (index < 0 || index >= queue.length) return;
+    _queueIndex = index;
+  }
 
-  bool get hasNext => _queueIndex < queue.length - 1;
-  bool get hasPrev => _queueIndex > 0;
+  // =====================================================
+  // RESOLVE AUDIO URL
+  // =====================================================
 
-  // =========================
-  // CONTROL
-  // =========================
+  Future<String?> _resolveAudioUrl(String videoId) async {
+    try {
+      debugPrint("Resolve YT Audio: $videoId");
+
+      final manifest =
+      await _yt.videos.streamsClient.getManifest(videoId);
+
+      final streams = manifest.audioOnly.sortByBitrate();
+
+      if (streams.isEmpty) {
+        debugPrint("No audio stream found");
+        return null;
+      }
+
+      final url = streams.last.url.toString();
+      debugPrint("Audio URL resolved");
+      return url;
+    } catch (e) {
+      debugPrint("YT Resolve Error: $e");
+      return null;
+    }
+  }
+
+  // =====================================================
+  // PLAY
+  // =====================================================
 
   @override
   Future<void> play() async {
     final song = currentSong;
-    if (song == null || song.type != YT_TYPE.VIDEO) return;
+
+    if (song == null) return;
+
+    if (song.type != YT_TYPE.VIDEO) {
+      debugPrint("Unsupported YT type");
+      return;
+    }
 
     currentYtSong.value = song;
-    _isCompletedCalled = false;
-    print("callaed");
-    _initController(song.id);
+
+    try {
+      debugPrint("Play: ${song.title}");
+
+      final url = await _resolveAudioUrl(song.id);
+
+      if (url == null) {
+        debugPrint("Failed resolve URL");
+        return;
+      }
+
+      // STOP CURRENT
+      await _player.stop();
+
+      // LOAD NEW
+      await _player.setAudioSource(
+        AudioSource.uri(Uri.parse(url)),
+      );
+
+      // PLAY
+      await _player.play();
+    } catch (e) {
+      debugPrint("YT Play Error: $e");
+    }
   }
+
+  // =====================================================
+  // CONTROL
+  // =====================================================
 
   @override
   Future<void> pause() async {
-    _controller?.pause();
-    isPlaying.value = false;
+    try {
+      await _player.pause();
+    } catch (_) {}
   }
 
   @override
   Future<void> resume() async {
-    _controller?.play();
-    isPlaying.value = true;
+    try {
+      await _player.play();
+    } catch (_) {}
   }
 
   @override
   Future<void> seek(Duration pos) async {
-    _controller?.seekTo(pos);
+    try {
+      await _player.seek(pos);
+    } catch (_) {}
   }
 
   @override
   Future<void> stop() async {
-    _controller?.pause();
-    _controller?.seekTo(Duration.zero);
+    try {
+      await _player.stop();
+    } catch (_) {}
 
-    isPlaying.value     = false;
-    position.value      = Duration.zero;
-    duration.value      = Duration.zero;
+    isPlaying.value = false;
+    position.value = Duration.zero;
+    duration.value = Duration.zero;
     currentYtSong.value = null;
-    _isCompletedCalled  = false;
   }
 
-  // =========================
-  // NAVIGATION
-  // =========================
-
   Future<void> next() async {
-    if (hasNext) {
-      _queueIndex++;
-      await play();
-    }
+    if (!hasNext) return;
+    _queueIndex++;
+    await play();
   }
 
   Future<void> previous() async {
-    if (hasPrev) {
-      _queueIndex--;
-      await play();
-    }
+    if (!hasPrev) return;
+    _queueIndex--;
+    await play();
   }
 
-  void setIndex(int i) {
-    if (i >= 0 && i < queue.length) {
-      _queueIndex = i;
-    }
-  }
-
-  // =========================
+  // =====================================================
   // DISPOSE
-  // =========================
+  // =====================================================
 
   @override
-  void dispose() {
-    _controller?.removeListener(_onUpdate);
-    _controller?.dispose();
-    _controller = null;
+  Future<void> dispose() async {
+    if (_isDisposed) return;
+    _isDisposed = true;
+
+    try {
+      // Use nullable ref — safe even if _player was never accessed
+      await _playerInstance?.dispose();
+      _playerInstance = null;
+    } catch (_) {}
+
+    _yt.close();
 
     isPlaying.dispose();
     position.dispose();
