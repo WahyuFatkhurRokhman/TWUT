@@ -1,5 +1,5 @@
 import 'package:flutter/material.dart';
-import 'package:music_player/desktop/youtube_search_delegate.dart';
+import 'package:music_player/pages/youtube_search_delegate.dart';
 import 'package:music_player/models/constant/YT_TYPE.dart';
 import 'package:music_player/models/yt_response.dart';
 import 'package:music_player/services/youtube_service.dart';

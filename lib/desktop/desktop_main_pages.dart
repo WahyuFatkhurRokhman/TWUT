@@ -1,5 +1,5 @@
 import 'package:flutter/material.dart';
-import 'package:music_player/desktop/youtube_page.dart';
+import 'package:music_player/pages/youtube_page.dart';
 import 'package:music_player/widgets/mini_player.dart';
 import 'sidebar_desktop.dart';
 import 'local_page.dart';
