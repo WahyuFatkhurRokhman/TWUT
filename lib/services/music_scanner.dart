@@ -16,10 +16,13 @@ class MusicScanner {
     final allowedFolders = [
       'music',
       'downloads',
+      'download',
       'documents',
       'desktop',
       'videos',
       'onedrive',
+      'song',
+      'songs',
     ];
 
     void scanDirectory(Directory directory) {
@@ -94,16 +97,16 @@ class MusicScanner {
   }
 
   static Directory _getRootDirectory() {
+    if (PlatformUtil.isAndroid) {
+      return Directory('/storage/emulated/0');
+    }
+
     if (PlatformUtil.isWindows) {
       return Directory('C:\\Users');
     }
 
     if (PlatformUtil.isLinux) {
       return Directory('/home');
-    }
-
-    if (PlatformUtil.isAndroid) {
-      return Directory('/storage/emulated/0');
     }
 
     throw UnsupportedError("Platform tidak didukung");
@@ -147,10 +150,18 @@ class MusicScanner {
       return [
         '/android/data',
         '/android/obb',
+        '/android/media',
         '/cache',
+        '/tmp',
+        '/temp',
+        '/.thumbnails',
+        '/dcim',
+        '/pictures',
+        '/movies',
+        '/download/.',
         'test',
         'lib',
-        'temp',
+        'node_modules',
       ];
     }
 
