@@ -15,7 +15,7 @@ class _DesktopMainPageState extends State<DesktopMainPage> {
   int selectedIndex = 0;
 
   final pages = [
-    Container(), // Home (kosong, sesuai permintaan tuan)
+    Container(),
     const LocalPage(),
     const YoutubePage(),
   ];

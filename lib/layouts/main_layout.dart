@@ -1,7 +1,9 @@
 import 'package:flutter/material.dart';
 import 'package:music_player/desktop/desktop_main_pages.dart';
 import 'package:music_player/desktop/local_page.dart';
+import 'package:music_player/pages/permission_page.dart';
 import 'package:music_player/pages/youtube_page.dart';
+import 'package:music_player/services/music_scanner.dart';
 import 'package:music_player/utils/platform_util.dart';
 import 'package:music_player/widgets/mini_player.dart';
 
@@ -14,16 +16,45 @@ class MainLayout extends StatefulWidget {
 
 class _MainLayoutState extends State<MainLayout> {
   int _selectedIndex = 0;
+  bool? _hasPermission;
 
   final List<Widget> _pages = [
-    const Center(child: Text("Home Page")), // Placeholder Home
+    const Center(child: Text("Home Page")),
     const LocalPage(),
     const YoutubePage(),
   ];
 
   @override
+  void initState() {
+    super.initState();
+    _checkPermission();
+  }
+
+  Future<void> _checkPermission() async {
+    if (!PlatformUtil.isAndroid) {
+      setState(() => _hasPermission = true);
+      return;
+    }
+    
+    bool granted = await MusicScanner.hasPermissions();
+    setState(() => _hasPermission = granted);
+  }
+
+  @override
   Widget build(BuildContext context) {
-    // DESKTOP: Side Navigation (Sudah dibuat sebelumnya)
+    if (_hasPermission == null) {
+      return const Scaffold(
+        body: Center(child: CircularProgressIndicator(color: Colors.green)),
+      );
+    }
+
+    if (!_hasPermission! && PlatformUtil.isAndroid) {
+      return PermissionPage(
+        onGranted: () => setState(() => _hasPermission = true),
+      );
+    }
+
+    // DESKTOP: Side Navigation
     if (PlatformUtil.isDesktop) {
       return const DesktopMainPage();
     }
@@ -33,7 +64,7 @@ class _MainLayoutState extends State<MainLayout> {
       body: Stack(
         children: [
           Padding(
-            padding: const EdgeInsets.only(bottom: 108), // Ruang untuk MiniPlayer
+            padding: const EdgeInsets.only(bottom: 108),
             child: IndexedStack(
               index: _selectedIndex,
               children: _pages,
