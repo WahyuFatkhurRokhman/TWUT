@@ -1,8 +1,7 @@
 import 'dart:async';
 
 import 'package:flutter/foundation.dart';
-import 'package:just_audio/just_audio.dart';
-import 'package:youtube_explode_dart/youtube_explode_dart.dart';
+import 'package:youtube_player_iframe/youtube_player_iframe.dart';
 
 import 'package:music_player/models/constant/YT_TYPE.dart';
 import 'package:music_player/models/yt_song.dart';
@@ -14,31 +13,35 @@ class YoutubePlayerManager implements PlayerManager {
 
   factory YoutubePlayerManager() => _instance;
 
-  YoutubePlayerManager._internal() {
-    _initListeners();
-  }
+  YoutubePlayerManager._internal();
 
   // =====================================================
-  // PLAYER
+  // CONTROLLER
+  // youtube_player_iframe controller — must be attached to
+  // a YoutubePlayerScaffold / YoutubePlayer widget in the tree
   // =====================================================
 
-  // Lazy-initialized to avoid MissingPluginException during startup
-  // (platform channels may not be ready when the singleton is first created)
-  AudioPlayer? _playerInstance;
+  YoutubePlayerController? _controller;
 
-  AudioPlayer get _player {
-    _playerInstance ??= AudioPlayer();
-    return _playerInstance!;
+  /// Expose controller so the widget layer can attach it
+  YoutubePlayerController get controller {
+    _controller ??= YoutubePlayerController(
+      params: const YoutubePlayerParams(
+        showControls: false,
+        showFullscreenButton: false,
+        mute: false,
+        loop: false,
+      ),
+    );
+    return _controller!;
   }
-
-  final YoutubeExplode _yt = YoutubeExplode();
-
-  dynamic get controller => null;
 
   bool _isDisposed = false;
 
+  Timer? _pollTimer;
+
   // =====================================================
-  // VALUE NOTIFIER
+  // VALUE NOTIFIERS
   // =====================================================
 
   @override
@@ -57,7 +60,6 @@ class YoutubePlayerManager implements PlayerManager {
   // =====================================================
 
   final List<YtSong> queue = [];
-
   int _queueIndex = -1;
 
   int get currentIndex => _queueIndex;
@@ -65,42 +67,53 @@ class YoutubePlayerManager implements PlayerManager {
   void Function()? onTrackComplete;
 
   YtSong? get currentSong {
-    if (_queueIndex < 0 || _queueIndex >= queue.length) {
-      return null;
-    }
+    if (_queueIndex < 0 || _queueIndex >= queue.length) return null;
     return queue[_queueIndex];
   }
 
   bool get hasNext => _queueIndex < queue.length - 1;
-
   bool get hasPrev => _queueIndex > 0;
 
   // =====================================================
-  // INIT LISTENER
+  // POLLING — karena youtube_player_iframe tidak punya stream
+  // untuk position/duration/isPlaying secara langsung
   // =====================================================
 
-  void _initListeners() {
-    _player.playingStream.listen((playing) {
+  void _startPolling() {
+    _pollTimer?.cancel();
+    _pollTimer = Timer.periodic(const Duration(milliseconds: 500), (_) async {
+      if (_isDisposed || _controller == null) return;
+      await _pollState();
+    });
+  }
+
+  void _stopPolling() {
+    _pollTimer?.cancel();
+    _pollTimer = null;
+  }
+
+  Future<void> _pollState() async {
+    try {
+      final playerState = await _controller!.playerState;
+      final pos = await _controller!.currentTime;
+      final dur = await _controller!.duration;
+
       if (_isDisposed) return;
+
+      final playing = playerState == PlayerState.playing;
       isPlaying.value = playing;
-    });
+      position.value = Duration(milliseconds: (pos * 1000).round());
+      duration.value = Duration(milliseconds: (dur * 1000).round());
 
-    _player.positionStream.listen((pos) {
-      if (_isDisposed) return;
-      position.value = pos;
-    });
-
-    _player.durationStream.listen((dur) {
-      if (_isDisposed) return;
-      duration.value = dur ?? Duration.zero;
-    });
-
-    _player.playerStateStream.listen((state) {
-      if (_isDisposed) return;
-      if (state.processingState == ProcessingState.completed) {
+      // Cek track complete
+      if (playerState == PlayerState.ended) {
+        _stopPolling();
+        isPlaying.value = false;
         onTrackComplete?.call();
       }
-    });
+    } catch (_) {
+      // Controller belum siap / sedang dispose
+    }
   }
 
   // =====================================================
@@ -120,103 +133,69 @@ class YoutubePlayerManager implements PlayerManager {
   }
 
   // =====================================================
-  // RESOLVE AUDIO URL
-  // =====================================================
-
-  Future<String?> _resolveAudioUrl(String videoId) async {
-    try {
-      debugPrint("Resolve YT Audio: $videoId");
-
-      final manifest =
-      await _yt.videos.streamsClient.getManifest(videoId);
-
-      final streams = manifest.audioOnly.sortByBitrate();
-
-      if (streams.isEmpty) {
-        debugPrint("No audio stream found");
-        return null;
-      }
-
-      final url = streams.last.url.toString();
-      debugPrint("Audio URL resolved");
-      return url;
-    } catch (e) {
-      debugPrint("YT Resolve Error: $e");
-      return null;
-    }
-  }
-
-  // =====================================================
   // PLAY
   // =====================================================
 
   @override
   Future<void> play() async {
     final song = currentSong;
-
     if (song == null) return;
 
     if (song.type != YT_TYPE.VIDEO) {
-      debugPrint("Unsupported YT type");
+      debugPrint("YoutubePlayerManager: tipe tidak didukung (${song.type})");
       return;
     }
 
     currentYtSong.value = song;
 
     try {
-      debugPrint("Play: ${song.title}");
+      debugPrint("YoutubePlayerManager: play ${song.title} (${song.id})");
 
-      final url = await _resolveAudioUrl(song.id);
+      // Load video ID ke controller
+      // youtube_player_iframe akan otomatis play setelah load
+      await controller.loadVideoById(videoId: song.id);
 
-      if (url == null) {
-        debugPrint("Failed resolve URL");
-        return;
-      }
-
-      // STOP CURRENT
-      await _player.stop();
-
-      // LOAD NEW
-      await _player.setAudioSource(
-        AudioSource.uri(Uri.parse(url)),
-      );
-
-      // PLAY
-      await _player.play();
+      _startPolling();
     } catch (e) {
-      debugPrint("YT Play Error: $e");
+      debugPrint("YoutubePlayerManager play error: $e");
     }
   }
 
   // =====================================================
-  // CONTROL
+  // CONTROLS
   // =====================================================
 
   @override
   Future<void> pause() async {
     try {
-      await _player.pause();
+      await _controller?.pauseVideo();
+      isPlaying.value = false;
     } catch (_) {}
   }
 
   @override
   Future<void> resume() async {
     try {
-      await _player.play();
+      await _controller?.playVideo();
+      isPlaying.value = true;
     } catch (_) {}
   }
 
   @override
   Future<void> seek(Duration pos) async {
     try {
-      await _player.seek(pos);
+      await _controller?.seekTo(
+        seconds: pos.inMilliseconds / 1000.0,
+        allowSeekAhead: true,
+      );
     } catch (_) {}
   }
 
   @override
   Future<void> stop() async {
+    _stopPolling();
     try {
-      await _player.stop();
+      await _controller?.stopVideo();
     } catch (_) {}
 
     isPlaying.value = false;
@@ -246,13 +225,12 @@ class YoutubePlayerManager implements PlayerManager {
     if (_isDisposed) return;
     _isDisposed = true;
 
-    try {
-      // Use nullable ref — safe even if _player was never accessed
-      await _playerInstance?.dispose();
-      _playerInstance = null;
-    } catch (_) {}
+    _stopPolling();
 
-    _yt.close();
+    try {
+      _controller?.close();
+      _controller = null;
+    } catch (_) {}
 
     isPlaying.dispose();
     position.dispose();
