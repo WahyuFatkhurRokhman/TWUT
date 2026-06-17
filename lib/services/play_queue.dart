@@ -66,6 +66,12 @@ class PlayQueue {
     refreshShuffle();
   }
 
+  void loadSongs(List<Song> songs) {
+    _queue.value = songs.map((s) => s.toNowPlaying()).toList();
+    _currentIndex.value = 0;
+    refreshShuffle();
+  }
+
   // =========================
   // REPLACE WITH SINGLE SONG
   // (clear queue lama, isi dengan 1 lagu)

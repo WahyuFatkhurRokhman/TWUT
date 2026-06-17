@@ -1,9 +1,12 @@
 
 import 'package:flutter/material.dart';
+import 'package:music_player/data/database.dart';
 import 'package:music_player/models/song.dart';
+import 'package:music_player/widgets/add_to_playlist_dialog.dart';
 
 class SongTile extends StatelessWidget {
   final Song song;
+  final AppDatabase db;
   final VoidCallback onTap;
   final VoidCallback onAddToQueue;
   final VoidCallback onDetail;
@@ -13,6 +16,7 @@ class SongTile extends StatelessWidget {
   const SongTile({
     super.key,
     required this.song,
+    required this.db,
     required this.onTap,
     required this.onAddToQueue,
     required this.onDetail,
@@ -45,6 +49,11 @@ class SongTile extends StatelessWidget {
             onDetail.call();
           } else if(value == 'single_play'){
             onSinglePlay.call();
+          } else if (value == 'add_playlist') {
+            showDialog(
+              context: context,
+              builder: (context) => AddToPlaylistDialog(db: db, song: song),
+            );
           }
         },
         itemBuilder: (context) => [
@@ -55,6 +64,10 @@ class SongTile extends StatelessWidget {
           const PopupMenuItem(
             value: 'add_queue',
             child: Text('Tambahkan ke Antrian'),
+          ),
+          const PopupMenuItem(
+            value: 'add_playlist',
+            child: Text('Tambahkan ke Playlist'),
           ),
           const PopupMenuItem(
             value: 'detail',

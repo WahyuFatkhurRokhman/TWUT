@@ -89,6 +89,32 @@ class AudioManager {
     _syncState();
   }
 
+  Future<void> playPlaylist(List<Song> songs, {bool shuffle = false}) async {
+    await _stopOther(PlaybackSource.local);
+    activeSource.value = PlaybackSource.local;
+
+    // Load songs into queue
+    // Creating a group music just to fit in existing method, or we can just load directly
+    // Let's create a temporary group music or direct load.
+    // Actually, let's add a method to PlayQueue to load a list of songs.
+    local.queue.loadSongs(songs);
+
+    if (shuffle) {
+      if (!local.queue.shuffleMode.value) {
+        local.queue.toggleShuffle();
+      }
+      local.queue.setIndex(0); // Shuffle will handle reordering
+    } else {
+      if (local.queue.shuffleMode.value) {
+        local.queue.toggleShuffle();
+      }
+      local.queue.setIndex(0);
+    }
+
+    await local.play();
+    _syncState();
+  }
+
   Future<void> playLocalSong(Song song) async {
     await _stopOther(PlaybackSource.local);
     activeSource.value = PlaybackSource.local;
