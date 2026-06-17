@@ -6,7 +6,6 @@ import 'package:music_player/widgets/add_to_playlist_dialog.dart';
 
 class SongTile extends StatelessWidget {
   final Song song;
-  final AppDatabase db;
   final VoidCallback onTap;
   final VoidCallback onAddToQueue;
   final VoidCallback onDetail;
@@ -16,7 +15,6 @@ class SongTile extends StatelessWidget {
   const SongTile({
     super.key,
     required this.song,
-    required this.db,
     required this.onTap,
     required this.onAddToQueue,
     required this.onDetail,
@@ -52,7 +50,7 @@ class SongTile extends StatelessWidget {
           } else if (value == 'add_playlist') {
             showDialog(
               context: context,
-              builder: (context) => AddToPlaylistDialog(db: db, song: song),
+              builder: (context) => AddToPlaylistDialog(db: AppDatabase(), song: song),
             );
           }
         },

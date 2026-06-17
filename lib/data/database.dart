@@ -6,7 +6,12 @@ part 'database.g.dart';
 
 @DriftDatabase(tables: [Playlists, PlaylistSongs])
 class AppDatabase extends _$AppDatabase {
-  AppDatabase() : super(_openConnection());
+  // Singleton instance
+  static final AppDatabase _instance = AppDatabase._internal();
+
+  factory AppDatabase() => _instance;
+
+  AppDatabase._internal() : super(_openConnection());
 
   @override
   int get schemaVersion => 1;

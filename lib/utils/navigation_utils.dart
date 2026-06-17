@@ -1,6 +1,5 @@
 import 'package:flutter/material.dart';
-import 'package:music_player/routes/root_route.dart';
-import 'package:music_player/routes/main_route.dart';
+import 'package:music_player/routes/app_router.dart';
 
 class NavigationUtil {
   // ========== NESTED NAVIGATOR (MainLayout) ==========
@@ -12,7 +11,7 @@ class NavigationUtil {
 
   /// Push dalam nested navigator (home, folder-music, dll)
   static Future<T?>? pushNested<T>(String routeName, {Object? arguments}) {
-    return _nested?.pushNamed<T>(routeName, arguments: arguments);
+    return _nested?.pushNamed(routeName, arguments: arguments);
   }
 
   /// Push widget dalam nested navigator
@@ -31,12 +30,12 @@ class NavigationUtil {
 
   /// Navigate ke Home
   static Future<T?>? toHome<T>() {
-    return pushNested<T>(MainRoute.home);
+    return pushNested<T>(AppRouter.home);
   }
 
   /// Navigate ke Folder Music List
   static Future<T?>? toFolderMusic<T>(String folder) {
-    return pushNested<T>(MainRoute.folderMusic, arguments: {'folder': folder});
+    return pushNested<T>(AppRouter.folderMusic, arguments: {'groupMusic': folder});
   }
 
   // ========== ROOT NAVIGATOR (Full App) ==========
@@ -64,7 +63,7 @@ class NavigationUtil {
 
   /// Navigate ke Music Player
   static Future<void> toMusicPlayer(BuildContext context, {Object? arguments}) {
-    return pushRoot(context, RootRoute.musicPlayer, arguments: arguments);
+    return pushRoot(context, AppRouter.musicPlayer, arguments: arguments);
   }
 
   // ========== CUSTOM ANIMATIONS ==========

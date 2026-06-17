@@ -4,7 +4,7 @@ import 'package:music_player/models/album_group.dart';
 import 'package:music_player/models/artist_group.dart';
 import 'package:music_player/models/group_music.dart';
 import 'package:music_player/pages/category_group_music_page.dart';
-import 'package:music_player/routes/main_route.dart';
+import 'package:music_player/routes/app_router.dart';
 import 'package:music_player/services/music_service.dart';
 import 'package:music_player/utils/navigation_utils.dart';
 import 'package:music_player/utils/group_music_helper.dart';
@@ -276,9 +276,8 @@ Widget buildTopBar() {
               Expanded(
                 child: Navigator(
                   key: NavigationUtil.nestedKey,
-                  initialRoute: MainRoute.home,
-                  onGenerateRoute: MainRoute.generateRoute,
-                  onUnknownRoute: MainRoute.onUnknownRoute,
+                  initialRoute: AppRouter.home,
+                  onGenerateRoute: AppRouter.generateNestedRoute,
                 ),
               ),
             ],

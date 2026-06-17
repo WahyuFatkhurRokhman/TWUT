@@ -1,64 +1,59 @@
 import 'package:flutter/material.dart';
 import 'package:music_player/config/app_colors.dart';
 
-class SidebarDesktop extends StatelessWidget {
+class AppSidebar extends StatelessWidget {
   final int selectedIndex;
   final Function(int) onSelect;
+  final bool isMobile;
 
-  const SidebarDesktop({
+  const AppSidebar({
     super.key,
     required this.selectedIndex,
     required this.onSelect,
+    this.isMobile = false,
   });
 
   @override
   Widget build(BuildContext context) {
+    if (isMobile) {
+      return Drawer(
+        backgroundColor: AppColors.card,
+        child: _buildContent(),
+      );
+    }
     return Container(
       width: 260,
       padding: const EdgeInsets.all(16),
-      color: AppColors.card,// lebih gelap biar kontras
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          const SizedBox(height: 10),
+      color: AppColors.card,
+      child: _buildContent(),
+    );
+  }
 
-          // 🔥 Logo + Title
-          Row(
-            children: const [
-              Icon(Icons.graphic_eq, color: Colors.white, size: 22),
-              SizedBox(width: 10),
-              Text(
-                "Musicplayer",
-                style: TextStyle(
-                  color: Colors.white,
-                  fontSize: 18,
-                  fontWeight: FontWeight.w600,
-                ),
+  Widget _buildContent() {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        const SizedBox(height: 10),
+        const Row(
+          children: [
+            Icon(Icons.graphic_eq, color: Colors.white, size: 22),
+            SizedBox(width: 10),
+            Text(
+              "Musicplayer",
+              style: TextStyle(
+                color: Colors.white,
+                fontSize: 18,
+                fontWeight: FontWeight.w600,
               ),
-            ],
-          ),
-
-          // const SizedBox(height: 30),
-
-          // 🔎 DISCOVER
-          // const Text(
-          //   "DISCOVER",
-          //   style: TextStyle(
-          //     color: Colors.white54,
-          //     fontSize: 11,
-          //     letterSpacing: 1.2,
-          //   ),
-          // ),
-
-          const SizedBox(height: 15),
-
-          _sideItem(Icons.home_outlined, "Home", 0),
-          _sideItem(Icons.folder_outlined, "Local", 1),
-          _sideItem(Icons.smart_display_outlined, "Youtube", 2),
-
-          const Spacer(),
-        ],
-      ),
+            ),
+          ],
+        ),
+        const SizedBox(height: 15),
+        _sideItem(Icons.home_outlined, "Home", 0),
+        _sideItem(Icons.folder_outlined, "Local", 1),
+        _sideItem(Icons.smart_display_outlined, "Youtube", 2),
+        const Spacer(),
+      ],
     );
   }
 
@@ -90,8 +85,7 @@ class SidebarDesktop extends StatelessWidget {
               style: TextStyle(
                 fontSize: 14,
                 color: isSelected ? Colors.white : Colors.white54,
-                fontWeight:
-                    isSelected ? FontWeight.w500 : FontWeight.normal,
+                fontWeight: isSelected ? FontWeight.w500 : FontWeight.normal,
               ),
             ),
           ],

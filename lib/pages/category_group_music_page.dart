@@ -26,7 +26,9 @@ class _CategoryGroupMusicPageState extends State<CategoryGroupMusicPage> {
   void initState() {
     super.initState();
 
-    _musicService.loadSongs();
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      _musicService.loadSongs();
+    });
 
     // 🔥 TAMBAHKAN DI SINI
     if (widget.category != 'folder') {

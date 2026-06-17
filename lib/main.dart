@@ -1,14 +1,9 @@
 import 'package:flutter/material.dart';
 import 'package:music_player/config/app_theme.dart';
-import 'package:music_player/routes/root_route.dart';
+import 'package:music_player/routes/app_router.dart';
 import 'package:music_player/services/audio_manager.dart';
 import 'package:music_player/utils/platform_util.dart';
-import 'package:flutter/material.dart';
-
-import 'package:music_player/config/app_theme.dart';
-import 'package:music_player/routes/root_route.dart';
-import 'package:music_player/services/audio_manager.dart';
-import 'package:music_player/utils/platform_util.dart';
+import 'package:music_player/widgets/mini_player.dart';
 
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -29,8 +24,11 @@ class MyApp extends StatelessWidget {
       debugShowCheckedModeBanner: false,
       title: 'Music Library',
       theme: AppTheme.darkTheme,
-      initialRoute: RootRoute.mainLayout,
-      onGenerateRoute: RootRoute.generateRoute,
+      initialRoute: AppRouter.mainLayout,
+      onGenerateRoute: AppRouter.generateRoute,
+      builder: (context, child) {
+        return Material(child: child);
+      },
     );
   }
 }

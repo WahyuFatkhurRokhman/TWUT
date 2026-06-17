@@ -80,8 +80,15 @@ class _AddToPlaylistDialogState extends State<AddToPlaylistDialog> {
                 ..._playlists.map((playlist) => ListTile(
                       title: Text(playlist.name),
                       onTap: () async {
-                        await _playlistService.addSongToPlaylist(playlist.id, widget.song);
-                        if (mounted) Navigator.pop(context);
+                        final success = await _playlistService.addSongToPlaylist(playlist.id, widget.song);
+                        if (!mounted) return;
+                        if (success) {
+                          Navigator.pop(context);
+                        } else {
+                          ScaffoldMessenger.of(context).showSnackBar(
+                            const SnackBar(content: Text('Lagu sudah ada di playlist ini')),
+                          );
+                        }
                       },
                     )),
               ],

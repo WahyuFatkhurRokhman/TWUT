@@ -18,7 +18,16 @@ class PlaylistService {
   }
 
   // Add a song to a playlist
-  Future<void> addSongToPlaylist(int playlistId, Song song) async {
+  Future<bool> addSongToPlaylist(int playlistId, Song song) async {
+    // Check if song already exists in this playlist
+    final existing = await (_db.select(_db.playlistSongs)
+      ..where((t) => t.playlistId.equals(playlistId) & t.songPath.equals(song.path)))
+        .getSingleOrNull();
+
+    if (existing != null) {
+      return false; // Already exists
+    }
+
     await _db.into(_db.playlistSongs).insert(PlaylistSongsCompanion.insert(
       playlistId: playlistId,
       songPath: song.path,
@@ -27,6 +36,7 @@ class PlaylistService {
       album: Value(song.album),
       durationMs: Value(song.duration?.inMilliseconds),
     ));
+    return true; // Added
   }
 
   // Get songs in a playlist
