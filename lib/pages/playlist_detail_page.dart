@@ -5,18 +5,20 @@ import 'package:music_player/services/audio_manager.dart';
 import 'package:music_player/widgets/song_tile.dart';
 
 class PlaylistDetailPage extends StatelessWidget {
+  final int? playlistId;
   final String playlistName;
   final List<Song> songs;
 
   const PlaylistDetailPage({
     super.key,
+    this.playlistId,
     required this.playlistName,
     required this.songs,
   });
 
   Future<void> _playPlaylist(bool shuffle) async {
     final audio = AudioManager();
-    await audio.playPlaylist(songs, shuffle: shuffle);
+    await audio.playPlaylist(songs, shuffle: shuffle, playlistId: playlistId);
   }
 
   @override

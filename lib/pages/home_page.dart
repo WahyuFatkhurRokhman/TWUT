@@ -137,11 +137,11 @@ class _HomePageState extends State<HomePage> {
                               onTap: () => _navigateToPlaylist(playlist),
                               onPlay: () async {
                                 final songs = await _getSongs(playlist);
-                                AudioManager().playPlaylist(songs, shuffle: false);
+                                AudioManager().playPlaylist(songs, shuffle: false, playlistId: playlist.id);
                               },
                               onShuffle: () async {
                                 final songs = await _getSongs(playlist);
-                                AudioManager().playPlaylist(songs, shuffle: true);
+                                AudioManager().playPlaylist(songs, shuffle: true, playlistId: playlist.id);
                               },
                             );
                           },

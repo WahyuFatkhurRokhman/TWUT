@@ -40,6 +40,18 @@ class HistoryPlayLocalSong {
     return list.map((row) => row.songPath).toList();
   }
 
+  Future<List<String>> getFrequentlyPlayedSongPaths() async {
+    final query = _db.selectOnly(_db.localSongHistory)
+      ..addColumns([_db.localSongHistory.songPath, _db.localSongHistory.songPath.count()])
+      ..groupBy([_db.localSongHistory.songPath])
+      ..where(_db.localSongHistory.songPath.count().isBiggerThan(const Constant(3)))
+      ..limit(5);
+
+    
+    final results = await query.get();
+    return results.map((row) => row.read(_db.localSongHistory.songPath)!).toList();
+  }
+
   // menampilkan 5 terakhir
   Future<List<Playlist>> getRecentPlaylist() async {
     final query = _db.select(_db.playlistHistory).join([

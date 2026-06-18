@@ -1,10 +1,12 @@
 import 'package:flutter/foundation.dart';
+import 'package:music_player/data/database.dart';
 import 'package:music_player/models/constant/PLAYBACK_SOURCE.dart';
 import 'package:music_player/models/constant/REPEAT_MODE.dart';
 import 'package:music_player/models/group_music.dart';
 import 'package:music_player/models/song.dart';
 import 'package:music_player/models/yt_song.dart';
 import 'package:music_player/models/now_playing_media.dart';
+import 'package:music_player/services/history_play_local_song.dart';
 
 import 'package:music_player/services/local_player_manager.dart';
 import 'package:music_player/services/play_queue.dart';
@@ -18,6 +20,7 @@ class AudioManager {
 
   final local = LocalPlayerManager();
   final youtube = YoutubePlayerManager();
+  late final HistoryPlayLocalSong _history;
 
   final activeSource = ValueNotifier(PlaybackSource.local);
   final repeatMode = ValueNotifier(REPEAT_MODE.OFF);
@@ -35,6 +38,7 @@ class AudioManager {
   PlayerManager get _active => activeSource.value == PlaybackSource.local ? local : youtube;
 
   void init() {
+    _history = HistoryPlayLocalSong(AppDatabase());
     local.init();
     local.onTrackComplete = _handleLocalTrackComplete;
     youtube.onTrackComplete = _handleYoutubeTrackComplete;
@@ -89,14 +93,11 @@ class AudioManager {
     _syncState();
   }
 
-  Future<void> playPlaylist(List<Song> songs, {bool shuffle = false}) async {
+  Future<void> playPlaylist(List<Song> songs, {bool shuffle = false, int? playlistId}) async {
     await _stopOther(PlaybackSource.local);
     activeSource.value = PlaybackSource.local;
 
     // Load songs into queue
-    // Creating a group music just to fit in existing method, or we can just load directly
-    // Let's create a temporary group music or direct load.
-    // Actually, let's add a method to PlayQueue to load a list of songs.
     local.queue.loadSongs(songs);
 
     if (shuffle) {
@@ -111,6 +112,13 @@ class AudioManager {
       local.queue.setIndex(0);
     }
 
+    if (playlistId != null) {
+      // Need a Playlist object for the history service. Let's create a dummy one if we only have ID
+      // Actually, HistoryPlayLocalSong takes a Playlist object. 
+      // Let's check Playlist model.
+      _history.addPlaylist(Playlist(id: playlistId, name: ''));
+    }
+
     await local.play();
     _syncState();
   }
@@ -119,6 +127,7 @@ class AudioManager {
     await _stopOther(PlaybackSource.local);
     activeSource.value = PlaybackSource.local;
     local.queue.replaceWithSong(song);
+    _history.addSong(song);
     await local.play();
     _syncState();
   }

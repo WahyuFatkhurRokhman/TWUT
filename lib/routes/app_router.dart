@@ -62,6 +62,7 @@ class AppRouter {
         final args = settings.arguments as Map<String, dynamic>;
         return MaterialPageRoute(
           builder: (_) => PlaylistDetailPage(
+            playlistId: args['playlistId'],
             playlistName: args['playlistName'],
             songs: args['songs'],
           ),
