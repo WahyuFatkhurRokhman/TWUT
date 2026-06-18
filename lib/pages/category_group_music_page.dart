@@ -36,7 +36,6 @@ class _CategoryGroupMusicPageState extends State<CategoryGroupMusicPage> {
     }
   }
 
-  /// ambil notifier sesuai kategori
   ValueNotifier<List<dynamic>> _groupNotifier() {
     switch (widget.category) {
       case 'folder':
@@ -66,33 +65,6 @@ class _CategoryGroupMusicPageState extends State<CategoryGroupMusicPage> {
     final notifier = _groupNotifier();
 
     return Scaffold(
-      // appBar: AppBar(
-      //   title: Text(widget.category.toUpperCase()),
-      //   actions: [
-      //     ValueListenableBuilder<bool>(
-      //       valueListenable: _musicService.isLoading,
-      //       builder: (context, loading, _) {
-      //         if (loading) {
-      //           return const Padding(
-      //             padding: EdgeInsets.all(12),
-      //             child: SizedBox(
-      //               width: 22,
-      //               height: 22,
-      //               child: CircularProgressIndicator(
-      //                 strokeWidth: 2.2,
-      //               ),
-      //             ),
-      //           );
-      //         }
-
-      //         return IconButton(
-      //           icon: const Icon(Icons.refresh),
-      //           onPressed: _musicService.refreshSongs,
-      //         );
-      //       },
-      //     ),
-      //   ],
-      // ),
       body: ValueListenableBuilder<List<dynamic>>(
         valueListenable: notifier,
         builder: (context, groups, _) {
@@ -136,9 +108,7 @@ class _CategoryGroupMusicPageState extends State<CategoryGroupMusicPage> {
                     groupMusic: group,
                     onTap: () {
                       _musicService.selectedGroup.value = group;
-                  
-                      // optional: debug / log
-                      //debugPrint("Selected: ${getGroupTitle(group)}");
+
                   
                       _openGroup(group);
                     },

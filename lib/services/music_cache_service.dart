@@ -1,19 +1,13 @@
 import 'dart:convert';
 import 'dart:io';
 import 'package:music_player/models/song.dart';
-import 'package:path_provider/path_provider.dart';
+import 'package:music_player/utils/storage_util.dart';
 
 class MusicCacheService {
 
   static Future<File> _getFile() async {
-    final dir = await getApplicationDocumentsDirectory();
-    final twutDir = Directory('${dir.path}/Twut');
-
-    if (!await twutDir.exists()) {
-      await twutDir.create(recursive: true);
-    }
-
-    return File('${twutDir.path}/music_cache.json');
+    final dir = await StorageUtil.getAppDirectory();
+    return File('${dir.path}/music_cache.json');
   }
 
   static Future<void> saveSongs(List<Song> songs) async {
