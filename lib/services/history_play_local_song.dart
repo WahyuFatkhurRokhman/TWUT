@@ -8,6 +8,16 @@ class HistoryPlayLocalSong {
 
   HistoryPlayLocalSong(this._db);
 
+  Future<void> clearSongHistory() async {
+    await _db.delete(_db.localSongHistory).go();
+    DataNotifier().notifyHistoryChanged();
+  }
+
+  Future<void> clearPlaylistHistory() async {
+    await _db.delete(_db.playlistHistory).go();
+    DataNotifier().notifyHistoryChanged();
+  }
+
   Future<void> addPlaylist(int playlistId) async {
     await _db
         .into(_db.playlistHistory)
