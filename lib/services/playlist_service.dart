@@ -1,6 +1,7 @@
 import 'package:music_player/data/database.dart';
 import 'package:music_player/models/song.dart';
 import 'package:drift/drift.dart';
+import 'package:music_player/utils/data_notifier.dart';
 
 class PlaylistService {
   final AppDatabase _db;
@@ -9,7 +10,9 @@ class PlaylistService {
 
   // Create a new playlist
   Future<int> createPlaylist(String name) async {
-    return await _db.into(_db.playlists).insert(PlaylistsCompanion.insert(name: name));
+    final id = await _db.into(_db.playlists).insert(PlaylistsCompanion.insert(name: name));
+    DataNotifier().notifyPlaylistChanged();
+    return id;
   }
 
   // Get all playlists
@@ -36,6 +39,7 @@ class PlaylistService {
       album: Value(song.album),
       durationMs: Value(song.duration?.inMilliseconds),
     ));
+    DataNotifier().notifyPlaylistChanged();
     return true; // Added
   }
 
@@ -45,8 +49,25 @@ class PlaylistService {
     return await query.get();
   }
 
-  // Delete a playlist
+
+  // Rename a playlist
+  Future<void> renamePlaylist(int playlistId, String newName) async {
+    await (_db.update(_db.playlists)..where((t) => t.id.equals(playlistId)))
+        .write(PlaylistsCompanion(name: Value(newName)));
+    DataNotifier().notifyPlaylistChanged();
+  }
+
+  // Remove a song from a playlist
+  Future<void> removeSongFromPlaylist(int playlistId, String songPath) async {
+    await (_db.delete(_db.playlistSongs)
+      ..where((t) => t.playlistId.equals(playlistId) & t.songPath.equals(songPath)))
+        .go();
+    DataNotifier().notifyPlaylistChanged();
+  }
+
+  // Delete a playlist (Cascading delete handles PlaylistSongs)
   Future<void> deletePlaylist(int playlistId) async {
     await (_db.delete(_db.playlists)..where((t) => t.id.equals(playlistId))).go();
+    DataNotifier().notifyPlaylistChanged();
   }
 }

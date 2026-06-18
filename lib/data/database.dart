@@ -1,5 +1,8 @@
+import 'dart:io';
+
 import 'package:drift/drift.dart';
 import 'package:drift_flutter/drift_flutter.dart';
+import 'package:music_player/utils/storage_util.dart';
 import 'table/playlists.dart';
 import 'table/history.dart';
 
@@ -18,6 +21,8 @@ class AppDatabase extends _$AppDatabase {
   int get schemaVersion => 1;
 
   static QueryExecutor _openConnection() {
-    return driftDatabase(name: 'music_player');
+    return driftDatabase(name: 'music_player', native: DriftNativeOptions(
+      databaseDirectory: () => StorageUtil.getAppDirectory(),
+    ));
   }
 }

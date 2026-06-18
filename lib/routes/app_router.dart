@@ -1,21 +1,16 @@
 import 'package:flutter/material.dart';
 import 'package:music_player/layouts/main_layout.dart';
+import 'package:music_player/pages/music_player_page.dart';
+
 import 'package:music_player/pages/category_group_music_page.dart';
 import 'package:music_player/pages/group_music_list_page.dart';
-import 'package:music_player/pages/music_player_page.dart';
 import 'package:music_player/pages/playlist_detail_page.dart';
+import 'package:music_player/pages/playlist_page.dart';
 
 class AppRouter {
   // Top-level routes
   static const String mainLayout = '/';
   static const String musicPlayer = '/music-player';
-
-  // Local Page Sub-routes
-  static const String home = '/home';
-  static const String folder = '/folder';
-  static const String album = '/album';
-  static const String artist = '/artist';
-  static const String folderMusic = '/folder-music';
 
   static Route<dynamic>? generateRoute(RouteSettings settings) {
     switch (settings.name) {
@@ -34,15 +29,29 @@ class AppRouter {
     }
   }
 
-  // Home Sub-routes
-  static const String playlistDetail = '/playlist-detail';
+  static const String home = '/home';
+  static const String folder = '/folder';
+  static const String album = '/album';
+  static const String artist = '/artist';
+  static const String folderMusic = '/folder-music';
+  static const String playlistPage = '/playlist-page';
+  static const String playlistDetail = '/playlist-page/detail';
 
-  static Route<dynamic>? generateNestedRoute(RouteSettings settings) {
+  static Route<dynamic>? generateLibraryRoute(RouteSettings settings) {
     switch (settings.name) {
       case home:
       case folder:
         return MaterialPageRoute(
           builder: (_) => const CategoryGroupMusicPage(category: 'folder'),
+        );
+      case playlistPage:
+        return MaterialPageRoute(builder: (_) => PlaylistPage());
+      case playlistDetail:
+        final args = settings.arguments as Map<String, dynamic>;
+        return MaterialPageRoute(
+          builder: (_) => PlaylistDetailPage(
+            playlist: args['playlist']
+          ),
         );
       case album:
         return MaterialPageRoute(
@@ -57,15 +66,6 @@ class AppRouter {
         final groupMusic = args?['groupMusic'] ?? '';
         return MaterialPageRoute(
           builder: (_) => GroupMusicListPage(groupMusic: groupMusic),
-        );
-      case playlistDetail:
-        final args = settings.arguments as Map<String, dynamic>;
-        return MaterialPageRoute(
-          builder: (_) => PlaylistDetailPage(
-            playlistId: args['playlistId'],
-            playlistName: args['playlistName'],
-            songs: args['songs'],
-          ),
         );
       default:
         return MaterialPageRoute(

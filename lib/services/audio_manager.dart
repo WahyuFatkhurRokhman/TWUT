@@ -112,11 +112,9 @@ class AudioManager {
       local.queue.setIndex(0);
     }
 
+    // Add to history if a playlistId is provided
     if (playlistId != null) {
-      // Need a Playlist object for the history service. Let's create a dummy one if we only have ID
-      // Actually, HistoryPlayLocalSong takes a Playlist object. 
-      // Let's check Playlist model.
-      _history.addPlaylist(Playlist(id: playlistId, name: ''));
+      await _history.addPlaylist(playlistId);
     }
 
     await local.play();
@@ -196,6 +194,12 @@ class AudioManager {
       local.play();
     } else if (repeatMode.value == REPEAT_MODE.ALL || !local.queue.isLast) {
       playNext();
+    }
+    
+    // Add current song to history when track completes
+    final current = local.currentSong.value;
+    if (current != null) {
+      _history.addSong(current);
     }
   }
 

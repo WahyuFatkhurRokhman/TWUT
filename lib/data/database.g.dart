@@ -784,6 +784,46 @@ class $LocalSongHistoryTable extends LocalSongHistory
     type: DriftSqlType.string,
     requiredDuringInsert: true,
   );
+  static const VerificationMeta _titleMeta = const VerificationMeta('title');
+  @override
+  late final GeneratedColumn<String> title = GeneratedColumn<String>(
+    'title',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: true,
+  );
+  static const VerificationMeta _artistMeta = const VerificationMeta('artist');
+  @override
+  late final GeneratedColumn<String> artist = GeneratedColumn<String>(
+    'artist',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: false,
+    defaultValue: const Constant('Unknown Artist'),
+  );
+  static const VerificationMeta _albumMeta = const VerificationMeta('album');
+  @override
+  late final GeneratedColumn<String> album = GeneratedColumn<String>(
+    'album',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: false,
+    defaultValue: const Constant('Unknown Album'),
+  );
+  static const VerificationMeta _durationMsMeta = const VerificationMeta(
+    'durationMs',
+  );
+  @override
+  late final GeneratedColumn<int> durationMs = GeneratedColumn<int>(
+    'duration_ms',
+    aliasedName,
+    true,
+    type: DriftSqlType.int,
+    requiredDuringInsert: false,
+  );
   static const VerificationMeta _playedAtMeta = const VerificationMeta(
     'playedAt',
   );
@@ -797,7 +837,15 @@ class $LocalSongHistoryTable extends LocalSongHistory
     defaultValue: currentDateAndTime,
   );
   @override
-  List<GeneratedColumn> get $columns => [id, songPath, playedAt];
+  List<GeneratedColumn> get $columns => [
+    id,
+    songPath,
+    title,
+    artist,
+    album,
+    durationMs,
+    playedAt,
+  ];
   @override
   String get aliasedName => _alias ?? actualTableName;
   @override
@@ -820,6 +868,32 @@ class $LocalSongHistoryTable extends LocalSongHistory
       );
     } else if (isInserting) {
       context.missing(_songPathMeta);
+    }
+    if (data.containsKey('title')) {
+      context.handle(
+        _titleMeta,
+        title.isAcceptableOrUnknown(data['title']!, _titleMeta),
+      );
+    } else if (isInserting) {
+      context.missing(_titleMeta);
+    }
+    if (data.containsKey('artist')) {
+      context.handle(
+        _artistMeta,
+        artist.isAcceptableOrUnknown(data['artist']!, _artistMeta),
+      );
+    }
+    if (data.containsKey('album')) {
+      context.handle(
+        _albumMeta,
+        album.isAcceptableOrUnknown(data['album']!, _albumMeta),
+      );
+    }
+    if (data.containsKey('duration_ms')) {
+      context.handle(
+        _durationMsMeta,
+        durationMs.isAcceptableOrUnknown(data['duration_ms']!, _durationMsMeta),
+      );
     }
     if (data.containsKey('played_at')) {
       context.handle(
@@ -844,6 +918,22 @@ class $LocalSongHistoryTable extends LocalSongHistory
         DriftSqlType.string,
         data['${effectivePrefix}song_path'],
       )!,
+      title: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}title'],
+      )!,
+      artist: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}artist'],
+      )!,
+      album: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}album'],
+      )!,
+      durationMs: attachedDatabase.typeMapping.read(
+        DriftSqlType.int,
+        data['${effectivePrefix}duration_ms'],
+      ),
       playedAt: attachedDatabase.typeMapping.read(
         DriftSqlType.dateTime,
         data['${effectivePrefix}played_at'],
@@ -861,10 +951,18 @@ class LocalSongHistoryData extends DataClass
     implements Insertable<LocalSongHistoryData> {
   final int id;
   final String songPath;
+  final String title;
+  final String artist;
+  final String album;
+  final int? durationMs;
   final DateTime playedAt;
   const LocalSongHistoryData({
     required this.id,
     required this.songPath,
+    required this.title,
+    required this.artist,
+    required this.album,
+    this.durationMs,
     required this.playedAt,
   });
   @override
@@ -872,6 +970,12 @@ class LocalSongHistoryData extends DataClass
     final map = <String, Expression>{};
     map['id'] = Variable<int>(id);
     map['song_path'] = Variable<String>(songPath);
+    map['title'] = Variable<String>(title);
+    map['artist'] = Variable<String>(artist);
+    map['album'] = Variable<String>(album);
+    if (!nullToAbsent || durationMs != null) {
+      map['duration_ms'] = Variable<int>(durationMs);
+    }
     map['played_at'] = Variable<DateTime>(playedAt);
     return map;
   }
@@ -880,6 +984,12 @@ class LocalSongHistoryData extends DataClass
     return LocalSongHistoryCompanion(
       id: Value(id),
       songPath: Value(songPath),
+      title: Value(title),
+      artist: Value(artist),
+      album: Value(album),
+      durationMs: durationMs == null && nullToAbsent
+          ? const Value.absent()
+          : Value(durationMs),
       playedAt: Value(playedAt),
     );
   }
@@ -892,6 +1002,10 @@ class LocalSongHistoryData extends DataClass
     return LocalSongHistoryData(
       id: serializer.fromJson<int>(json['id']),
       songPath: serializer.fromJson<String>(json['songPath']),
+      title: serializer.fromJson<String>(json['title']),
+      artist: serializer.fromJson<String>(json['artist']),
+      album: serializer.fromJson<String>(json['album']),
+      durationMs: serializer.fromJson<int?>(json['durationMs']),
       playedAt: serializer.fromJson<DateTime>(json['playedAt']),
     );
   }
@@ -901,6 +1015,10 @@ class LocalSongHistoryData extends DataClass
     return <String, dynamic>{
       'id': serializer.toJson<int>(id),
       'songPath': serializer.toJson<String>(songPath),
+      'title': serializer.toJson<String>(title),
+      'artist': serializer.toJson<String>(artist),
+      'album': serializer.toJson<String>(album),
+      'durationMs': serializer.toJson<int?>(durationMs),
       'playedAt': serializer.toJson<DateTime>(playedAt),
     };
   }
@@ -908,16 +1026,30 @@ class LocalSongHistoryData extends DataClass
   LocalSongHistoryData copyWith({
     int? id,
     String? songPath,
+    String? title,
+    String? artist,
+    String? album,
+    Value<int?> durationMs = const Value.absent(),
     DateTime? playedAt,
   }) => LocalSongHistoryData(
     id: id ?? this.id,
     songPath: songPath ?? this.songPath,
+    title: title ?? this.title,
+    artist: artist ?? this.artist,
+    album: album ?? this.album,
+    durationMs: durationMs.present ? durationMs.value : this.durationMs,
     playedAt: playedAt ?? this.playedAt,
   );
   LocalSongHistoryData copyWithCompanion(LocalSongHistoryCompanion data) {
     return LocalSongHistoryData(
       id: data.id.present ? data.id.value : this.id,
       songPath: data.songPath.present ? data.songPath.value : this.songPath,
+      title: data.title.present ? data.title.value : this.title,
+      artist: data.artist.present ? data.artist.value : this.artist,
+      album: data.album.present ? data.album.value : this.album,
+      durationMs: data.durationMs.present
+          ? data.durationMs.value
+          : this.durationMs,
       playedAt: data.playedAt.present ? data.playedAt.value : this.playedAt,
     );
   }
@@ -927,44 +1059,74 @@ class LocalSongHistoryData extends DataClass
     return (StringBuffer('LocalSongHistoryData(')
           ..write('id: $id, ')
           ..write('songPath: $songPath, ')
+          ..write('title: $title, ')
+          ..write('artist: $artist, ')
+          ..write('album: $album, ')
+          ..write('durationMs: $durationMs, ')
           ..write('playedAt: $playedAt')
           ..write(')'))
         .toString();
   }
 
   @override
-  int get hashCode => Object.hash(id, songPath, playedAt);
+  int get hashCode =>
+      Object.hash(id, songPath, title, artist, album, durationMs, playedAt);
   @override
   bool operator ==(Object other) =>
       identical(this, other) ||
       (other is LocalSongHistoryData &&
           other.id == this.id &&
           other.songPath == this.songPath &&
+          other.title == this.title &&
+          other.artist == this.artist &&
+          other.album == this.album &&
+          other.durationMs == this.durationMs &&
           other.playedAt == this.playedAt);
 }
 
 class LocalSongHistoryCompanion extends UpdateCompanion<LocalSongHistoryData> {
   final Value<int> id;
   final Value<String> songPath;
+  final Value<String> title;
+  final Value<String> artist;
+  final Value<String> album;
+  final Value<int?> durationMs;
   final Value<DateTime> playedAt;
   const LocalSongHistoryCompanion({
     this.id = const Value.absent(),
     this.songPath = const Value.absent(),
+    this.title = const Value.absent(),
+    this.artist = const Value.absent(),
+    this.album = const Value.absent(),
+    this.durationMs = const Value.absent(),
     this.playedAt = const Value.absent(),
   });
   LocalSongHistoryCompanion.insert({
     this.id = const Value.absent(),
     required String songPath,
+    required String title,
+    this.artist = const Value.absent(),
+    this.album = const Value.absent(),
+    this.durationMs = const Value.absent(),
     this.playedAt = const Value.absent(),
-  }) : songPath = Value(songPath);
+  }) : songPath = Value(songPath),
+       title = Value(title);
   static Insertable<LocalSongHistoryData> custom({
     Expression<int>? id,
     Expression<String>? songPath,
+    Expression<String>? title,
+    Expression<String>? artist,
+    Expression<String>? album,
+    Expression<int>? durationMs,
     Expression<DateTime>? playedAt,
   }) {
     return RawValuesInsertable({
       if (id != null) 'id': id,
       if (songPath != null) 'song_path': songPath,
+      if (title != null) 'title': title,
+      if (artist != null) 'artist': artist,
+      if (album != null) 'album': album,
+      if (durationMs != null) 'duration_ms': durationMs,
       if (playedAt != null) 'played_at': playedAt,
     });
   }
@@ -972,11 +1134,19 @@ class LocalSongHistoryCompanion extends UpdateCompanion<LocalSongHistoryData> {
   LocalSongHistoryCompanion copyWith({
     Value<int>? id,
     Value<String>? songPath,
+    Value<String>? title,
+    Value<String>? artist,
+    Value<String>? album,
+    Value<int?>? durationMs,
     Value<DateTime>? playedAt,
   }) {
     return LocalSongHistoryCompanion(
       id: id ?? this.id,
       songPath: songPath ?? this.songPath,
+      title: title ?? this.title,
+      artist: artist ?? this.artist,
+      album: album ?? this.album,
+      durationMs: durationMs ?? this.durationMs,
       playedAt: playedAt ?? this.playedAt,
     );
   }
@@ -990,6 +1160,18 @@ class LocalSongHistoryCompanion extends UpdateCompanion<LocalSongHistoryData> {
     if (songPath.present) {
       map['song_path'] = Variable<String>(songPath.value);
     }
+    if (title.present) {
+      map['title'] = Variable<String>(title.value);
+    }
+    if (artist.present) {
+      map['artist'] = Variable<String>(artist.value);
+    }
+    if (album.present) {
+      map['album'] = Variable<String>(album.value);
+    }
+    if (durationMs.present) {
+      map['duration_ms'] = Variable<int>(durationMs.value);
+    }
     if (playedAt.present) {
       map['played_at'] = Variable<DateTime>(playedAt.value);
     }
@@ -1001,6 +1183,10 @@ class LocalSongHistoryCompanion extends UpdateCompanion<LocalSongHistoryData> {
     return (StringBuffer('LocalSongHistoryCompanion(')
           ..write('id: $id, ')
           ..write('songPath: $songPath, ')
+          ..write('title: $title, ')
+          ..write('artist: $artist, ')
+          ..write('album: $album, ')
+          ..write('durationMs: $durationMs, ')
           ..write('playedAt: $playedAt')
           ..write(')'))
         .toString();
@@ -2037,12 +2223,20 @@ typedef $$LocalSongHistoryTableCreateCompanionBuilder =
     LocalSongHistoryCompanion Function({
       Value<int> id,
       required String songPath,
+      required String title,
+      Value<String> artist,
+      Value<String> album,
+      Value<int?> durationMs,
       Value<DateTime> playedAt,
     });
 typedef $$LocalSongHistoryTableUpdateCompanionBuilder =
     LocalSongHistoryCompanion Function({
       Value<int> id,
       Value<String> songPath,
+      Value<String> title,
+      Value<String> artist,
+      Value<String> album,
+      Value<int?> durationMs,
       Value<DateTime> playedAt,
     });
 
@@ -2062,6 +2256,26 @@ class $$LocalSongHistoryTableFilterComposer
 
   ColumnFilters<String> get songPath => $composableBuilder(
     column: $table.songPath,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get title => $composableBuilder(
+    column: $table.title,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get artist => $composableBuilder(
+    column: $table.artist,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get album => $composableBuilder(
+    column: $table.album,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<int> get durationMs => $composableBuilder(
+    column: $table.durationMs,
     builder: (column) => ColumnFilters(column),
   );
 
@@ -2090,6 +2304,26 @@ class $$LocalSongHistoryTableOrderingComposer
     builder: (column) => ColumnOrderings(column),
   );
 
+  ColumnOrderings<String> get title => $composableBuilder(
+    column: $table.title,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get artist => $composableBuilder(
+    column: $table.artist,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get album => $composableBuilder(
+    column: $table.album,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<int> get durationMs => $composableBuilder(
+    column: $table.durationMs,
+    builder: (column) => ColumnOrderings(column),
+  );
+
   ColumnOrderings<DateTime> get playedAt => $composableBuilder(
     column: $table.playedAt,
     builder: (column) => ColumnOrderings(column),
@@ -2110,6 +2344,20 @@ class $$LocalSongHistoryTableAnnotationComposer
 
   GeneratedColumn<String> get songPath =>
       $composableBuilder(column: $table.songPath, builder: (column) => column);
+
+  GeneratedColumn<String> get title =>
+      $composableBuilder(column: $table.title, builder: (column) => column);
+
+  GeneratedColumn<String> get artist =>
+      $composableBuilder(column: $table.artist, builder: (column) => column);
+
+  GeneratedColumn<String> get album =>
+      $composableBuilder(column: $table.album, builder: (column) => column);
+
+  GeneratedColumn<int> get durationMs => $composableBuilder(
+    column: $table.durationMs,
+    builder: (column) => column,
+  );
 
   GeneratedColumn<DateTime> get playedAt =>
       $composableBuilder(column: $table.playedAt, builder: (column) => column);
@@ -2154,20 +2402,36 @@ class $$LocalSongHistoryTableTableManager
               ({
                 Value<int> id = const Value.absent(),
                 Value<String> songPath = const Value.absent(),
+                Value<String> title = const Value.absent(),
+                Value<String> artist = const Value.absent(),
+                Value<String> album = const Value.absent(),
+                Value<int?> durationMs = const Value.absent(),
                 Value<DateTime> playedAt = const Value.absent(),
               }) => LocalSongHistoryCompanion(
                 id: id,
                 songPath: songPath,
+                title: title,
+                artist: artist,
+                album: album,
+                durationMs: durationMs,
                 playedAt: playedAt,
               ),
           createCompanionCallback:
               ({
                 Value<int> id = const Value.absent(),
                 required String songPath,
+                required String title,
+                Value<String> artist = const Value.absent(),
+                Value<String> album = const Value.absent(),
+                Value<int?> durationMs = const Value.absent(),
                 Value<DateTime> playedAt = const Value.absent(),
               }) => LocalSongHistoryCompanion.insert(
                 id: id,
                 songPath: songPath,
+                title: title,
+                artist: artist,
+                album: album,
+                durationMs: durationMs,
                 playedAt: playedAt,
               ),
           withReferenceMapper: (p0) => p0
