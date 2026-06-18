@@ -36,6 +36,25 @@ class HistoryPlayLocalSong {
     DataNotifier().notifyHistoryChanged();
   }
 
+  Future<List<Song>> getHistorySong() async {
+    final query = _db.select(_db.localSongHistory)
+      ..orderBy([(t) => OrderingTerm.desc(t.playedAt)]);
+    final list = await query.get();
+    return list
+        .map(
+          (row) => Song(
+        path: row.songPath,
+        title: row.title,
+        artist: row.artist,
+        album: row.album,
+        duration: row.durationMs != null
+            ? Duration(milliseconds: row.durationMs!)
+            : null,
+      ),
+    )
+        .toList();
+  }
+
   Future<List<Playlist>> getHistoryPlaylist() async {
     final query = _db.select(_db.playlistHistory).join([
       innerJoin(

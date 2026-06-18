@@ -31,7 +31,7 @@ class _HistoryPageState extends State<HistoryPage> {
   }
 
   Future<void> _loadHistory() async {
-    final history = await _historyService.getRecentSongs();
+    final history = await _historyService.getHistorySong();
     if (mounted) {
       setState(() {
         _historySongs = history;

@@ -190,16 +190,16 @@ class AudioManager {
   }
 
   void _handleLocalTrackComplete() {
-    if (repeatMode.value == REPEAT_MODE.ONE) {
-      local.play();
-    } else if (repeatMode.value == REPEAT_MODE.ALL || !local.queue.isLast) {
-      playNext();
-    }
-    
     // Add current song to history when track completes
     final current = local.currentSong.value;
     if (current != null) {
       _history.addSong(current);
+    }
+
+    if (repeatMode.value == REPEAT_MODE.ONE) {
+      local.play();
+    } else if (repeatMode.value == REPEAT_MODE.ALL || !local.queue.isLast) {
+      playNext();
     }
   }
 
