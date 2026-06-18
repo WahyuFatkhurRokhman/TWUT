@@ -5,6 +5,7 @@ import 'package:music_player/routes/app_router.dart';
 import 'package:music_player/services/audio_manager.dart';
 import 'package:music_player/services/history_play_local_song.dart';
 import 'package:music_player/services/playlist_service.dart';
+import 'package:music_player/utils/data_notifier.dart';
 
 class HomePage extends StatefulWidget {
   const HomePage({super.key});
@@ -27,6 +28,13 @@ class _HomePageState extends State<HomePage> {
   void initState() {
     super.initState();
     _loadData();
+    DataNotifier().historyNotifier.addListener(_loadData);
+  }
+
+  @override
+  void dispose() {
+    DataNotifier().historyNotifier.removeListener(_loadData);
+    super.dispose();
   }
 
   Future<void> _loadData() async {

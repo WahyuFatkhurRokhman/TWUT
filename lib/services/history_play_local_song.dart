@@ -36,7 +36,6 @@ class HistoryPlayLocalSong {
     DataNotifier().notifyHistoryChanged();
   }
 
-
   Future<List<Playlist>> getHistoryPlaylist() async {
     final query = _db.select(_db.playlistHistory).join([
       innerJoin(
@@ -51,15 +50,22 @@ class HistoryPlayLocalSong {
 
   Future<List<Song>> getRecentSongs() async {
     final query = _db.select(_db.localSongHistory)
-      ..orderBy([(t) => OrderingTerm.desc(t.playedAt)]);
+      ..orderBy([(t) => OrderingTerm.desc(t.playedAt)])
+      ..limit(5);
     final list = await query.get();
-    return list.map((row) => Song(
-      path: row.songPath,
-      title: row.title,
-      artist: row.artist,
-      album: row.album,
-      duration: row.durationMs != null ? Duration(milliseconds: row.durationMs!) : null,
-    )).toList();
+    return list
+        .map(
+          (row) => Song(
+            path: row.songPath,
+            title: row.title,
+            artist: row.artist,
+            album: row.album,
+            duration: row.durationMs != null
+                ? Duration(milliseconds: row.durationMs!)
+                : null,
+          ),
+        )
+        .toList();
   }
 
   Future<List<Song>> getFrequentlyPlayedSongs() async {
@@ -79,22 +85,27 @@ class HistoryPlayLocalSong {
         _db.localSongHistory.album,
         _db.localSongHistory.durationMs,
       ])
-      ..limit(5);
+      ..orderBy([OrderingTerm.desc(_db.localSongHistory.songPath.count())]);
 
     final results = await query.get();
     return results
         .where(
           (row) => (row.read(_db.localSongHistory.songPath.count()) as int) > 3,
         )
-        .map((row) => Song(
-          path: row.read(_db.localSongHistory.songPath)!,
-          title: row.read(_db.localSongHistory.title)!,
-          artist: row.read(_db.localSongHistory.artist)!,
-          album: row.read(_db.localSongHistory.album)!,
-          duration: row.read(_db.localSongHistory.durationMs) != null 
-              ? Duration(milliseconds: row.read(_db.localSongHistory.durationMs)!) 
-              : null,
-        ))
+        .take(5)
+        .map(
+          (row) => Song(
+            path: row.read(_db.localSongHistory.songPath)!,
+            title: row.read(_db.localSongHistory.title)!,
+            artist: row.read(_db.localSongHistory.artist)!,
+            album: row.read(_db.localSongHistory.album)!,
+            duration: row.read(_db.localSongHistory.durationMs) != null
+                ? Duration(
+                    milliseconds: row.read(_db.localSongHistory.durationMs)!,
+                  )
+                : null,
+          ),
+        )
         .toList();
   }
 
