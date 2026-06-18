@@ -31,13 +31,29 @@ dependencies:
   flutter:
     sdk: flutter
 
-  # The following adds the Cupertino Icons font to your application.
-  # Use with the CupertinoIcons class for iOS style icons.
   cupertino_icons: ^1.0.8
+
+  # Local audio
+  audioplayers: ^6.6.0
+  audio_metadata_reader: ^1.4.2
+  path_provider: ^2.1.5
+  http: ^1.2.0
+
+  # YouTube
+  youtube_player_iframe: ^5.2.0
+
+  shared_preferences: ^2.2.3
+  uuid: ^4.4.0
+  permission_handler: ^11.3.0
+  drift: ^2.34.0
+  drift_flutter: ^0.3.0
 
 dev_dependencies:
   flutter_test:
     sdk: flutter
+
+  build_runner: ^2.4.9
+  drift_dev: ^2.34.0
 
   # The "flutter_lints" package below contains a set of recommended lints to
   # encourage good coding practices. The lint set provided by the package is
@@ -73,7 +89,11 @@ flutter:
   # "family" key with the font family name, and a "fonts" key with a
   # list giving the asset and other descriptors for the font. For
   # example:
-  # fonts:
+  fonts:
+    - family: Inter
+      fonts:
+      - asset: lib/assets/fonts/Inter-Italic-VariableFont_opsz,wght.ttf
+      - asset: lib/assets/fonts/Inter-VariableFont_opsz,wght.ttf
   #   - family: Schyler
   #     fonts:
   #       - asset: fonts/Schyler-Regular.ttf

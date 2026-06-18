@@ -1,0 +1,1 @@
+enum PlaybackSource { local, youtube }
