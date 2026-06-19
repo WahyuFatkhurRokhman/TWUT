@@ -5,10 +5,12 @@ import 'package:music_player/models/artist_group.dart';
 import 'package:music_player/models/group_music.dart';
 import 'package:music_player/pages/category_group_music_page.dart';
 import 'package:music_player/pages/playlist_page.dart';
+import 'package:music_player/providers/local_provider.dart';
 import 'package:music_player/routes/app_router.dart';
 import 'package:music_player/services/music_service.dart';
 import 'package:music_player/utils/navigation_utils.dart';
 import 'package:music_player/utils/group_music_helper.dart';
+import 'package:provider/provider.dart';
 
 
 class NavigatorObserverProxy extends NavigatorObserver {
@@ -28,13 +30,13 @@ class NavigatorObserverProxy extends NavigatorObserver {
   }
 }
 
-class LibraryPage extends StatefulWidget {
-  const LibraryPage({super.key});
+class LocalPage extends StatefulWidget {
+  const LocalPage({super.key});
 
   @override
-  State<LibraryPage> createState() => LibraryPageState();
+  State<LocalPage> createState() => LocalPageState();
 }
-class LibraryPageState extends State<LibraryPage> {
+class LocalPageState extends State<LocalPage> {
   int _selectedIndex = 0;
   bool isInSubPage = false;
 
@@ -48,23 +50,27 @@ class LibraryPageState extends State<LibraryPage> {
   ArtistGroup? selectedArtist;
 
   bool get isInFolderDetail =>
-    selectedFilter == "folder" && musicService.selectedGroup.value != null;
+    selectedFilter == "folder" && localProvider.selectedGroup.value != null;
 
   final List<String> _categories = [
     "folder",
     "album",
     "artist",
-    "playlist",
   ];
 
   final List<String> _labels = [
     "Folder",
     "Album",
     "Artists",
-    "Playlists",
   ];
 
-  MusicService get musicService => MusicService.instance;
+  late LocalProvider localProvider;
+
+  @override
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+    localProvider = Provider.of<LocalProvider>(context);
+  }
 
   String get _currentLabel => _labels[_selectedIndex];
 
@@ -83,21 +89,9 @@ class LibraryPageState extends State<LibraryPage> {
 
     final category = _categories[index];
 
-    if (category == "playlist") {
-      NavigationUtil.noAnimationReplaceAndRemove(
-        context,
-        const PlaylistPage(),
-        root: false,
-      );
-    } else {
-      NavigationUtil.noAnimationReplaceAndRemove(
-        context,
-        CategoryGroupMusicPage(
-          category: category,
-        ),
-        root: false,
-      );
-    }
+    NavigationUtil.nestedKey.currentState?.pushReplacementNamed(
+        category == 'folder' ? AppRouter.folder : (category == 'album' ? AppRouter.album : AppRouter.artist)
+    );
   }
 
   void _openInitial() {
@@ -119,7 +113,7 @@ class LibraryPageState extends State<LibraryPage> {
     _selectedIndex = _categories.indexOf(filter);
 
     resetSelection();
-    musicService.selectedGroup.value = null;
+    localProvider.selectedGroup.value = null;
 
     setState(() {});
   }
@@ -141,12 +135,12 @@ class LibraryPageState extends State<LibraryPage> {
       mainAxisSize: MainAxisSize.min,
       children: [
         ValueListenableBuilder<GroupMusic?>(
-          valueListenable: musicService.selectedGroup,
+          valueListenable: localProvider.selectedGroup,
           builder: (context, group, _) {
             return ValueListenableBuilder<String?>(
               valueListenable: subPageTitle,
               builder: (context, title, _) {
-                final canPop = group != null || title != null || (NavigationUtil.nestedKey.currentState?.canPop() ?? false);
+                final canPop = group != null || title != null;
                 
                 String displayTitle = _currentLabel;
                 if (group != null) {
@@ -161,14 +155,14 @@ class LibraryPageState extends State<LibraryPage> {
                     if (canPop)
                       IconButton(
                         onPressed: () {
-                          musicService.selectedGroup.value = null;
-                          subPageTitle.value = null; // Clear title
+                          localProvider.selectedGroup.value = null;
+                          subPageTitle.value = null;
                           resetSelection();
 
                           if (NavigationUtil.nestedKey.currentState?.canPop() ?? false) {
                             NavigationUtil.nestedKey.currentState?.pop();
                           } else {
-                            Navigator.pop(context);
+                            NavigationUtil.noAnimation(context, const LocalPage());
                           }
                         },
                         icon: const Icon(Icons.arrow_back),
@@ -238,7 +232,7 @@ class LibraryPageState extends State<LibraryPage> {
 
   Widget _buildRightSection() {
     return ValueListenableBuilder<bool>(
-      valueListenable: musicService.isLoading,
+      valueListenable: localProvider.isLoading,
       builder: (context, isLoading, _) {
         if (isLoading) {
           return const Padding(
@@ -254,12 +248,13 @@ class LibraryPageState extends State<LibraryPage> {
         return IconButton(
           icon: const Icon(Icons.refresh),
           onPressed: () async {
-            await musicService.refreshSongs();
+            await localProvider.refreshSongs();
           },
         );
       },
     );
   }
+
 
   Widget buildTopBar() {
     return Padding(
@@ -313,7 +308,7 @@ class LibraryPageState extends State<LibraryPage> {
                 child: Navigator(
                   key: NavigationUtil.nestedKey,
                   initialRoute: AppRouter.home,
-                  onGenerateRoute: AppRouter.generateLibraryRoute,
+                  onGenerateRoute: AppRouter.generateLocalRoute,
                   observers: [
                     NavigatorObserverProxy(
                       onPop: _onNavigationChanged,

@@ -13,7 +13,7 @@ class YoutubeService {
       queryParams: {
         "q": query,
         "type": _typeToString(type),
-        if (pageToken != null) "pageToken": pageToken,
+        "pageToken": ?pageToken,
       },
     );
 
@@ -27,7 +27,7 @@ class YoutubeService {
     final response = await ApiService.get(
       "/playlist/$playlistId",
       queryParams: {
-        if (pageToken != null) "pageToken": pageToken,
+        "pageToken": ?pageToken,
       },
     );
 

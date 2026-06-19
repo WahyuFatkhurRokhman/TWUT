@@ -66,7 +66,7 @@ class _MusicPlayerPageState extends State<MusicPlayerPage> {
       endDrawer: QueueDrawer(),
       body: ValueListenableBuilder<NowPlayingMedia?>(
         valueListenable: audio.currentMedia,
-        builder: (_, media, __) {
+        builder: (_, media, _) {
           if (media == null) {
             WidgetsBinding.instance.addPostFrameCallback((_) {
               if (mounted) NavigationUtil.popRoot(context);
@@ -163,7 +163,7 @@ class _MusicPlayerPageState extends State<MusicPlayerPage> {
   Widget _mainPlaybackControls(AudioManager audio) {
     return ValueListenableBuilder<bool>(
       valueListenable: audio.isPlaying,
-      builder: (_, playing, __) {
+      builder: (_, playing, _) {
         return Row(
           mainAxisSize: MainAxisSize.min,
           children: [
@@ -191,7 +191,7 @@ class _MusicPlayerPageState extends State<MusicPlayerPage> {
   Widget _toggleShuffleMode(AudioManager audio) {
     return ValueListenableBuilder<bool>(
       valueListenable: audio.queue.shuffleMode,
-      builder: (_, enabled, __) => IconButton(
+      builder: (_, enabled, _) => IconButton(
         onPressed: audio.queue.toggleShuffle,
         icon: Icon(Icons.shuffle, color: enabled ? Colors.green : Colors.grey),
       ),
@@ -201,7 +201,7 @@ class _MusicPlayerPageState extends State<MusicPlayerPage> {
   Widget _toggleRepeatMode(AudioManager audio) {
     return ValueListenableBuilder<REPEAT_MODE>(
       valueListenable: audio.repeatMode,
-      builder: (_, mode, __) {
+      builder: (_, mode, _) {
         IconData icon = Icons.repeat;
         Color color = Colors.grey;
         if (mode == REPEAT_MODE.ALL) color = Colors.green;

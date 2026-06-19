@@ -37,21 +37,12 @@ class AppRouter {
   static const String playlistPage = '/playlist-page';
   static const String playlistDetail = '/playlist-page/detail';
 
-  static Route<dynamic>? generateLibraryRoute(RouteSettings settings) {
+  static Route<dynamic>? generateLocalRoute(RouteSettings settings) {
     switch (settings.name) {
       case home:
       case folder:
         return MaterialPageRoute(
           builder: (_) => const CategoryGroupMusicPage(category: 'folder'),
-        );
-      case playlistPage:
-        return MaterialPageRoute(builder: (_) => PlaylistPage());
-      case playlistDetail:
-        final args = settings.arguments as Map<String, dynamic>;
-        return MaterialPageRoute(
-          builder: (_) => PlaylistDetailPage(
-            playlist: args['playlist']
-          ),
         );
       case album:
         return MaterialPageRoute(
@@ -71,6 +62,23 @@ class AppRouter {
         return MaterialPageRoute(
           builder: (_) => const CategoryGroupMusicPage(category: 'folder'),
         );
+    }
+  }
+
+  static Route<dynamic>? generatePlaylistRoute(RouteSettings settings){
+    switch(settings.name){
+      case home:
+      case playlistPage:
+        return MaterialPageRoute(builder: (_) => PlaylistPage());
+      case playlistDetail:
+        final args = settings.arguments as Map<String, dynamic>;
+        return MaterialPageRoute(
+          builder: (_) => PlaylistDetailPage(
+              playlist: args['playlist']
+          ),
+        );
+      default:
+        return MaterialPageRoute(builder: (_) => PlaylistPage());
     }
   }
 }

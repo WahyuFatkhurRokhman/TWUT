@@ -3,7 +3,6 @@ import 'package:music_player/config/app_theme.dart';
 import 'package:music_player/routes/app_router.dart';
 import 'package:music_player/services/audio_manager.dart';
 import 'package:music_player/utils/platform_util.dart';
-import 'package:music_player/widgets/mini_player.dart';
 
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();

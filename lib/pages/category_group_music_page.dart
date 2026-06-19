@@ -1,10 +1,10 @@
 import 'package:flutter/material.dart';
 import 'package:music_player/models/group_music.dart';
-import 'package:music_player/services/music_service.dart';
 import 'package:music_player/widgets/group_music_tile.dart';
 import 'package:music_player/utils/navigation_utils.dart';
 import 'package:music_player/pages/group_music_list_page.dart';
-//import 'package:music_player/utils/group_music_helper.dart';
+import 'package:provider/provider.dart';
+import 'package:music_player/providers/local_provider.dart';
 
 class CategoryGroupMusicPage extends StatefulWidget {
   final String category; // folder / album / artist
@@ -20,32 +20,35 @@ class CategoryGroupMusicPage extends StatefulWidget {
 }
 
 class _CategoryGroupMusicPageState extends State<CategoryGroupMusicPage> {
-  final MusicService _musicService = MusicService.instance;
+  late LocalProvider _localProvider;
 
   @override
   void initState() {
     super.initState();
 
     WidgetsBinding.instance.addPostFrameCallback((_) {
-      _musicService.loadSongs();
+      _localProvider = Provider.of<LocalProvider>(context, listen: false);
+      _localProvider.loadSongs();
     });
 
     // 🔥 TAMBAHKAN DI SINI
     if (widget.category != 'folder') {
-      _musicService.selectedGroup.value = null;
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        _localProvider.selectedGroup.value = null;
+      });
     }
   }
 
   ValueNotifier<List<dynamic>> _groupNotifier() {
     switch (widget.category) {
       case 'folder':
-        return _musicService.folderGroup;
+        return _localProvider.folderGroup;
 
       case 'album':
-        return _musicService.albumGroup;
+        return _localProvider.albumGroup;
 
       case 'artist':
-        return _musicService.artistGroup;
+        return _localProvider.artistGroup;
 
       default:
         return ValueNotifier([]);
@@ -62,13 +65,14 @@ class _CategoryGroupMusicPageState extends State<CategoryGroupMusicPage> {
 
   @override
   Widget build(BuildContext context) {
+    _localProvider = Provider.of<LocalProvider>(context);
     final notifier = _groupNotifier();
 
     return Scaffold(
       body: ValueListenableBuilder<List<dynamic>>(
         valueListenable: notifier,
         builder: (context, groups, _) {
-          if (_musicService.isLoading.value && groups.isEmpty) {
+          if (_localProvider.isLoading.value && groups.isEmpty) {
             return const Center(
               child: Text("Sedang memindai file lokal..."),
             );
@@ -107,7 +111,7 @@ class _CategoryGroupMusicPageState extends State<CategoryGroupMusicPage> {
                   return GroupMusicTile(
                     groupMusic: group,
                     onTap: () {
-                      _musicService.selectedGroup.value = group;
+                      _localProvider.selectedGroup.value = group;
 
                   
                       _openGroup(group);

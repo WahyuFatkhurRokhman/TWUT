@@ -49,12 +49,19 @@ class PlaylistService {
     return await query.get();
   }
 
+  Future<Playlist?> getPlaylistDetailById(int playlistId) async {
+    final query = _db.select(_db.playlists)
+      ..where((t) => t.id.equals(playlistId));
+    return await query.getSingleOrNull();
+  }
+
 
   // Rename a playlist
   Future<void> renamePlaylist(int playlistId, String newName) async {
     await (_db.update(_db.playlists)..where((t) => t.id.equals(playlistId)))
         .write(PlaylistsCompanion(name: Value(newName)));
     DataNotifier().notifyPlaylistChanged();
+    DataNotifier().notifyHistoryChanged();
   }
 
   // Remove a song from a playlist
@@ -65,9 +72,9 @@ class PlaylistService {
     DataNotifier().notifyPlaylistChanged();
   }
 
-  // Delete a playlist (Cascading delete handles PlaylistSongs)
   Future<void> deletePlaylist(int playlistId) async {
     await (_db.delete(_db.playlists)..where((t) => t.id.equals(playlistId))).go();
     DataNotifier().notifyPlaylistChanged();
+    DataNotifier().notifyHistoryChanged();
   }
 }

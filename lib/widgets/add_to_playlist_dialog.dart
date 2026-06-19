@@ -1,7 +1,10 @@
 import 'package:flutter/material.dart';
 import 'package:music_player/data/database.dart';
 import 'package:music_player/models/song.dart';
+import 'package:music_player/routes/app_router.dart';
 import 'package:music_player/services/playlist_service.dart';
+import 'package:music_player/utils/navigation_utils.dart';
+import 'package:music_player/utils/snackbar_util.dart';
 
 class AddToPlaylistDialog extends StatefulWidget {
   final AppDatabase db;
@@ -59,7 +62,23 @@ class _AddToPlaylistDialogState extends State<AddToPlaylistDialog> {
     if (name != null && name.isNotEmpty) {
       final id = await _playlistService.createPlaylist(name);
       await _playlistService.addSongToPlaylist(id, widget.song);
-      if (mounted) Navigator.pop(context);
+      
+      if (mounted) {
+        SnackbarUtil.showSuccess(context, message: 'Playlist "$name" berhasil dibuat');
+        
+        // Navigate to the detail page of the new playlist
+        final playlist = await _playlistService.getPlaylistDetailById(id);
+        if (playlist != null) {
+          Navigator.pop(context); // Close dialog
+          Navigator.pushNamed(
+            context,
+            AppRouter.playlistDetail,
+            arguments: {'playlist': playlist},
+          );
+        } else {
+          Navigator.pop(context);
+        }
+      }
     }
   }
 
@@ -83,11 +102,10 @@ class _AddToPlaylistDialogState extends State<AddToPlaylistDialog> {
                         final success = await _playlistService.addSongToPlaylist(playlist.id, widget.song);
                         if (!mounted) return;
                         if (success) {
+                          SnackbarUtil.showSuccess(context, message: 'Lagu ditambahkan ke ${playlist.name}');
                           Navigator.pop(context);
                         } else {
-                          ScaffoldMessenger.of(context).showSnackBar(
-                            const SnackBar(content: Text('Lagu sudah ada di playlist ini')),
-                          );
+                          SnackbarUtil.showError(context, message: 'Lagu sudah ada di playlist ini');
                         }
                       },
                     )),

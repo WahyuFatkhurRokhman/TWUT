@@ -1,11 +1,13 @@
 import 'package:flutter/material.dart';
 import 'package:music_player/data/database.dart';
 import 'package:music_player/models/song.dart';
+import 'package:music_player/pages/music_player_page.dart';
 import 'package:music_player/routes/app_router.dart';
 import 'package:music_player/services/audio_manager.dart';
 import 'package:music_player/services/history_play_local_song.dart';
 import 'package:music_player/services/playlist_service.dart';
 import 'package:music_player/utils/data_notifier.dart';
+import 'package:music_player/utils/navigation_utils.dart';
 
 class HomePage extends StatefulWidget {
   const HomePage({super.key});
@@ -103,13 +105,17 @@ class _HomePageState extends State<HomePage> {
                       (s) => Song(
                         path: s.songPath,
                         title: s.title,
-                        artist: s.artist ?? 'Unknown',
-                        album: s.album ?? 'Unknown',
+                        artist: s.artist,
+                        album: s.album,
                         duration: Duration(milliseconds: s.durationMs ?? 0),
                       ),
                     )
                     .toList();
-                AudioManager().playPlaylist(songs, playlistId: playlist.id);
+                await AudioManager().playPlaylist(songs, playlistId: playlist.id);
+                
+                if (context.mounted) {
+                  NavigationUtil.slideUp(context, const MusicPlayerPage(), root: true);
+                }
               },
             ),
           ),
@@ -148,8 +154,11 @@ class _HomePageState extends State<HomePage> {
                   song.artist,
                   style: const TextStyle(color: Colors.white38),
                 ),
-                onTap: () {
-                  AudioManager().playLocalSong(song);
+                onTap: () async {
+                  await AudioManager().playLocalSong(song);
+                  if (context.mounted) {
+                    NavigationUtil.slideUp(context, const MusicPlayerPage(), root: true);
+                  }
                 },
               ),
             ),

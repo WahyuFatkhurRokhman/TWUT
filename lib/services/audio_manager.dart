@@ -15,7 +15,9 @@ import 'package:music_player/services/youtube_player_manager.dart';
 
 class AudioManager {
   static final AudioManager _instance = AudioManager._internal();
+
   factory AudioManager() => _instance;
+
   AudioManager._internal();
 
   final local = LocalPlayerManager();
@@ -27,15 +29,17 @@ class AudioManager {
   final volume = ValueNotifier(1.0);
   final currentMedia = ValueNotifier<NowPlayingMedia?>(null);
 
-  // Central Notifiers untuk UI yang konsisten
   final isPlaying = ValueNotifier(false);
   final position = ValueNotifier(Duration.zero);
   final duration = ValueNotifier(Duration.zero);
 
   // Getters
   PlayQueue get queue => local.queue;
+
   ValueNotifier<Song?> get currentSong => local.currentSong;
-  PlayerManager get _active => activeSource.value == PlaybackSource.local ? local : youtube;
+
+  PlayerManager get _active =>
+      activeSource.value == PlaybackSource.local ? local : youtube;
 
   void init() {
     _history = HistoryPlayLocalSong(AppDatabase());
@@ -93,7 +97,12 @@ class AudioManager {
     _syncState();
   }
 
-  Future<void> playPlaylist(List<Song> songs, {bool shuffle = false, int? playlistId}) async {
+  Future<void> playPlaylist(
+    List<Song> songs, {
+    bool shuffle = false,
+    int? playlistId,
+    int atIndex = 0,
+  }) async {
     await _stopOther(PlaybackSource.local);
     activeSource.value = PlaybackSource.local;
 
@@ -104,12 +113,12 @@ class AudioManager {
       if (!local.queue.shuffleMode.value) {
         local.queue.toggleShuffle();
       }
-      local.queue.setIndex(0); // Shuffle will handle reordering
+      local.queue.setIndex(atIndex); // Shuffle will handle reordering
     } else {
       if (local.queue.shuffleMode.value) {
         local.queue.toggleShuffle();
       }
-      local.queue.setIndex(0);
+      local.queue.setIndex(atIndex);
     }
 
     // Add to history if a playlistId is provided
@@ -156,9 +165,13 @@ class AudioManager {
   // CONTROLS
   // ======================================
 
-  Future<void> toggle() async => isPlaying.value ? await _active.pause() : await _active.resume();
+  Future<void> toggle() async =>
+      isPlaying.value ? await _active.pause() : await _active.resume();
+
   Future<void> pause() async => _active.pause();
+
   Future<void> resume() async => _active.resume();
+
   Future<void> seek(Duration pos) async => _active.seek(pos);
 
   Future<void> playNext() async {
@@ -175,7 +188,9 @@ class AudioManager {
 
   Future<void> playPrevious() async {
     if (activeSource.value == PlaybackSource.local) {
-      local.queue.isFirst ? local.queue.setIndex(local.queue.songs.length - 1) : local.queue.previous();
+      local.queue.isFirst
+          ? local.queue.setIndex(local.queue.songs.length - 1)
+          : local.queue.previous();
       await local.play();
       _syncState();
     }

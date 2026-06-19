@@ -1,10 +1,11 @@
 import 'package:flutter/material.dart';
-import 'package:music_player/config/app_colors.dart';
 import 'package:music_player/data/database.dart';
-import 'package:music_player/models/song.dart';
+import 'package:music_player/pages/playlist_detail_page.dart';
 import 'package:music_player/routes/app_router.dart';
 import 'package:music_player/services/playlist_service.dart';
 import 'package:music_player/utils/data_notifier.dart';
+import 'package:music_player/utils/navigation_utils.dart';
+import 'package:music_player/utils/snackbar_util.dart';
 import 'package:music_player/widgets/playlist_tile.dart';
 
 class PlaylistPage extends StatefulWidget {
@@ -43,13 +44,47 @@ class _PlaylistPageState extends State<PlaylistPage> {
   }
 
   void _navigateToPlaylist(Playlist playlist) {
-    Navigator.pushNamed(
-      context,
-      AppRouter.playlistDetail,
-      arguments: {
-        'playlist': playlist,
-      },
+    NavigationUtil.noAnimation(context, PlaylistDetailPage(playlist:
+    playlist), root: false);
+  }
+
+  Future<void> _renamePlaylist(Playlist playlist) async {
+    final controller = TextEditingController(text: playlist.name);
+    final newName = await showDialog<String>(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: const Text('Ubah Nama Playlist'),
+        content: TextField(controller: controller),
+        actions: [
+          TextButton(onPressed: () => Navigator.pop(context), child: const Text('Batal')),
+          TextButton(onPressed: () => Navigator.pop(context, controller.text), child: const Text('Simpan')),
+        ],
+      ),
     );
+
+    if (newName != null && newName.isNotEmpty) {
+      await _playlistService.renamePlaylist(playlist.id, newName);
+      if (mounted) SnackbarUtil.showSuccess(context, message: 'Playlist diubah menjadi "$newName"');
+    }
+  }
+
+  Future<void> _deletePlaylist(Playlist playlist) async {
+    final confirm = await showDialog<bool>(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: const Text('Hapus Playlist?'),
+        content: Text('Anda yakin ingin menghapus playlist "${playlist.name}"?'),
+        actions: [
+          TextButton(onPressed: () => Navigator.pop(context, false), child: const Text('Batal')),
+          TextButton(onPressed: () => Navigator.pop(context, true), child: const Text('Hapus')),
+        ],
+      ),
+    );
+
+    if (confirm == true) {
+      await _playlistService.deletePlaylist(playlist.id);
+      if (mounted) SnackbarUtil.showSuccess(context, message: 'Playlist "${playlist.name}" dihapus');
+    }
   }
 
   @override
@@ -92,9 +127,8 @@ class _PlaylistPageState extends State<PlaylistPage> {
                     return PlaylistTile(
                       title: playlist.name,
                       onTap: () => _navigateToPlaylist(playlist),
-                      onMoreTap: () {
-                        // Implement more menu logic here
-                      },
+                      onRename: () => _renamePlaylist(playlist),
+                      onDelete: () => _deletePlaylist(playlist),
                     );
                   },
                 );

@@ -21,7 +21,6 @@ class GroupMusicListPage extends StatelessWidget {
       ) async {
     final audio = AudioManager();
 
-    // Load seluruh grup ke queue, mulai dari index yang dipilih
     await audio.playLocalGroup(groupMusic, startIndex: index);
 
     if (context.mounted) {
@@ -100,7 +99,7 @@ class GroupMusicListPage extends StatelessWidget {
                 builder: (context, currentSong, _) {
                   return ListView.separated(
                     itemCount: groupMusic.songs.length,
-                    separatorBuilder: (_, __) =>
+                    separatorBuilder: (_, _) =>
                     const Divider(height: 1, indent: 70),
                     itemBuilder: (context, index) {
                       final song = groupMusic.songs[index];
