@@ -140,7 +140,7 @@ class _QueueDrawerState extends State<QueueDrawer> {
             Expanded(
               child: ValueListenableBuilder<List<NowPlayingMedia>>(
                 valueListenable: _queue.queue,
-                builder: (_, medias, __) {
+                builder: (_, medias, _) {
                   if (medias.isEmpty) {
                     return const Center(
                       child: Text('Antrian kosong', style: TextStyle(color: Colors.grey)),
@@ -149,7 +149,7 @@ class _QueueDrawerState extends State<QueueDrawer> {
 
                   return ValueListenableBuilder<int>(
                     valueListenable: _queue.currentIndex,
-                    builder: (_, currentIndex, __) {
+                    builder: (_, currentIndex, _) {
                       return ReorderableListView.builder(
                         scrollController: _scrollController,
                         buildDefaultDragHandles: false,

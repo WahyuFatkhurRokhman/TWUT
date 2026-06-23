@@ -1,12 +1,16 @@
 import 'package:flutter/material.dart';
-import 'package:music_player/pages/library_page.dart';
+import 'package:music_player/data/database.dart';
+import 'package:music_player/pages/playlist_page.dart';
+import 'package:music_player/pages/local_page.dart';
 import 'package:music_player/pages/permission_page.dart';
 import 'package:music_player/pages/youtube_page.dart';
 import 'package:music_player/pages/history_page.dart';
+import 'package:music_player/providers/local_provider.dart';
 import 'package:music_player/services/music_scanner.dart';
 import 'package:music_player/utils/platform_util.dart';
 import 'package:music_player/widgets/app_sidebar.dart';
 import 'package:music_player/widgets/mini_player.dart';
+import 'package:provider/provider.dart';
 
 import '../pages/home_page.dart';
 
@@ -23,9 +27,13 @@ class _MainLayoutState extends State<MainLayout> {
 
   final List<Widget> _pages = [
     const HomePage(),
-    const LibraryPage(),
+    ChangeNotifierProvider(
+      create: (_) => LocalProvider(AppDatabase()),
+      child: const LocalPage(),
+    ),
     const YoutubePage(),
     const HistoryPage(),
+    const PlaylistPage(),
   ];
 
   @override
@@ -123,9 +131,10 @@ class _MainLayoutState extends State<MainLayout> {
           type: BottomNavigationBarType.fixed,
           items: const [
             BottomNavigationBarItem(icon: Icon(Icons.home_outlined), label: "Home"),
-            BottomNavigationBarItem(icon: Icon(Icons.library_music_outlined), label: "Library"),
+            BottomNavigationBarItem(icon: Icon(Icons.library_music_outlined), label: "Local"),
             BottomNavigationBarItem(icon: Icon(Icons.smart_display_outlined), label: "Youtube"),
             BottomNavigationBarItem(icon: Icon(Icons.history_outlined), label: "History"),
+            BottomNavigationBarItem(icon: Icon(Icons.playlist_play_outlined), label: "Playlist"),
           ],
         ),
       );

@@ -38,19 +38,19 @@ class _AudioProgressBarState extends State<AudioProgressBar> {
     return ValueListenableBuilder<Duration>(
       valueListenable: widget.audio.position,
 
-      builder: (_, pos, __) {
+      builder: (_, pos, _) {
         return ValueListenableBuilder<Duration>(
           valueListenable: widget.audio.duration,
 
-          builder: (_, dur, __) {
+          builder: (_, dur, _) {
             return ValueListenableBuilder<bool>(
               valueListenable: _isDragging,
 
-              builder: (_, isDragging, __) {
+              builder: (_, isDragging, _) {
                 return ValueListenableBuilder<double?>(
                   valueListenable: _dragValue,
 
-                  builder: (_, dragValue, __) {
+                  builder: (_, dragValue, _) {
                     final max = dur.inMilliseconds.toDouble();
 
                     final safeMax = max <= 0 ? 1.0 : max;

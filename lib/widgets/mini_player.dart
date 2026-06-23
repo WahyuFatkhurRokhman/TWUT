@@ -36,7 +36,7 @@ class MiniPlayer extends StatelessWidget {
           child: ValueListenableBuilder<NowPlayingMedia?>(
             valueListenable: audio.currentMedia,
 
-            builder: (_, media, __) {
+            builder: (_, media, _) {
               if (media == null) {
                 return const SizedBox();
               }
@@ -149,7 +149,7 @@ class MiniPlayer extends StatelessWidget {
     return ValueListenableBuilder<bool>(
       valueListenable: audio.isPlaying,
 
-      builder: (_, playing, __) {
+      builder: (_, playing, _) {
         return Row(
           mainAxisSize: MainAxisSize.min,
 
@@ -221,7 +221,7 @@ class MiniPlayer extends StatelessWidget {
     return ValueListenableBuilder<bool>(
       valueListenable: audio.queue.shuffleMode,
 
-      builder: (_, enabled, __) {
+      builder: (_, enabled, _) {
         return IconButton(
           splashRadius: 20,
 
@@ -241,7 +241,7 @@ class MiniPlayer extends StatelessWidget {
     return ValueListenableBuilder<REPEAT_MODE>(
       valueListenable: audio.repeatMode,
 
-      builder: (_, mode, __) {
+      builder: (_, mode, _) {
         IconData icon = Icons.repeat_rounded;
 
         Color color = Colors.grey;
@@ -268,7 +268,7 @@ class MiniPlayer extends StatelessWidget {
     return ValueListenableBuilder<double>(
       valueListenable: audio.volume,
 
-      builder: (_, vol, __) {
+      builder: (_, vol, _) {
         return Row(
           children: [
             Icon(

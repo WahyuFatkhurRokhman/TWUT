@@ -1,7 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:music_player/models/constant/YT_TYPE.dart';
 import 'package:music_player/models/yt_response.dart';
-import 'package:music_player/models/yt_song.dart';
 import 'package:music_player/pages/music_player_page.dart';
 import 'package:music_player/services/audio_manager.dart';
 import 'package:music_player/services/youtube_service.dart';
@@ -64,12 +63,12 @@ class YoutubeSearchDelegate extends SearchDelegate {
                 close(context, null);
 
                 // SINGLE PLAYER: Memutar satu lagu saja
-                await audioManager.playYtSong(song as YtSong);
+                await audioManager.playYtSong(song);
 
                 navigator.push(
                   PageRouteBuilder(
-                    pageBuilder: (_, __, ___) => const MusicPlayerPage(),
-                    transitionsBuilder: (_, anim, __, child) => SlideTransition(
+                    pageBuilder: (_, _, _) => const MusicPlayerPage(),
+                    transitionsBuilder: (_, anim, _, child) => SlideTransition(
                       position: Tween(begin: const Offset(0, 1), end: Offset.zero).animate(anim),
                       child: child,
                     ),

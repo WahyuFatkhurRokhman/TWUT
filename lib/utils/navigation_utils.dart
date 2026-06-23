@@ -85,8 +85,8 @@ class NavigationUtil {
 
     return navigator.push<T>(
       PageRouteBuilder(
-        pageBuilder: (_, __, ___) => page,
-        transitionsBuilder: (_, animation, __, child) {
+        pageBuilder: (_, _, _) => page,
+        transitionsBuilder: (_, animation, _, child) {
           return SlideTransition(
             position: Tween(begin: const Offset(0, 1), end: Offset.zero)
                 .animate(
@@ -116,8 +116,8 @@ class NavigationUtil {
 
     return navigator.push<T>(
       PageRouteBuilder(
-        pageBuilder: (_, __, ___) => page,
-        transitionsBuilder: (_, animation, __, child) {
+        pageBuilder: (_, _, _) => page,
+        transitionsBuilder: (_, animation, _, child) {
           return SlideTransition(
             position: Tween(begin: const Offset(1, 0), end: Offset.zero)
                 .animate(
@@ -147,8 +147,8 @@ class NavigationUtil {
 
     return navigator.push<T>(
       PageRouteBuilder(
-        pageBuilder: (_, __, ___) => page,
-        transitionsBuilder: (_, animation, __, child) {
+        pageBuilder: (_, _, _) => page,
+        transitionsBuilder: (_, animation, _, child) {
           return FadeTransition(opacity: animation, child: child);
         },
       ),
@@ -172,8 +172,8 @@ class NavigationUtil {
 
     return navigator.pushReplacement<T, T>(
       PageRouteBuilder(
-        pageBuilder: (_, __, ___) => page,
-        transitionsBuilder: (_, animation, __, child) {
+        pageBuilder: (_, _, _) => page,
+        transitionsBuilder: (_, animation, _, child) {
           return FadeTransition(
             opacity: CurvedAnimation(
               parent: animation,
@@ -201,10 +201,10 @@ class NavigationUtil {
 
     return navigator.pushAndRemoveUntil<T>(
       PageRouteBuilder(
-        pageBuilder: (_, __, ___) => page,
+        pageBuilder: (_, _, _) => page,
         transitionDuration: const Duration(milliseconds: 300),
         reverseTransitionDuration: const Duration(milliseconds: 300),
-        transitionsBuilder: (_, animation, __, child) {
+        transitionsBuilder: (_, animation, _, child) {
           return FadeTransition(
             opacity: CurvedAnimation(
               parent: animation,
@@ -220,10 +220,10 @@ class NavigationUtil {
 
   static PageRouteBuilder<T> _noAnimationRoute<T>(Widget page) {
     return PageRouteBuilder<T>(
-      pageBuilder: (_, __, ___) => page,
+      pageBuilder: (_, _, _) => page,
       transitionDuration: Duration.zero,
       reverseTransitionDuration: Duration.zero,
-      transitionsBuilder: (_, __, ___, child) => child,
+      transitionsBuilder: (_, _, _, child) => child,
     );
   }
 

@@ -50,9 +50,10 @@ class AppSidebar extends StatelessWidget {
         ),
         const SizedBox(height: 15),
         _sideItem(Icons.home_outlined, "Home", 0),
-        _sideItem(Icons.folder_outlined, "Library", 1),
+        _sideItem(Icons.folder_outlined, "Local", 1),
         _sideItem(Icons.smart_display_outlined, "Youtube", 2),
         _sideItem(Icons.history_outlined, "History", 3),
+        _sideItem(Icons.playlist_play_outlined, "Playlists", 4),
         const Spacer(),
       ],
     );

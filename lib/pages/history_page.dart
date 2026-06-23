@@ -2,8 +2,11 @@ import 'package:flutter/material.dart';
 import 'package:music_player/config/app_colors.dart';
 import 'package:music_player/data/database.dart';
 import 'package:music_player/models/song.dart';
+import 'package:music_player/pages/music_player_page.dart';
+import 'package:music_player/services/audio_manager.dart';
 import 'package:music_player/services/history_play_local_song.dart';
 import 'package:music_player/utils/data_notifier.dart';
+import 'package:music_player/utils/navigation_utils.dart';
 
 class HistoryPage extends StatefulWidget {
   const HistoryPage({super.key});
@@ -58,6 +61,12 @@ class _HistoryPageState extends State<HistoryPage> {
                       return ListTile(
                         title: Text(song.title, style: const TextStyle(color: Colors.white)),
                         subtitle: Text(song.artist, style: const TextStyle(color: Colors.white70)),
+                        onTap: () async {
+                          await AudioManager().playLocalSong(song);
+                          if (context.mounted) {
+                            NavigationUtil.slideUp(context, const MusicPlayerPage(), root: true);
+                          }
+                        },
                       );
                     },
                   ),

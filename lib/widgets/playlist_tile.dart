@@ -4,13 +4,15 @@ import 'package:music_player/config/app_colors.dart';
 class PlaylistTile extends StatelessWidget {
   final String title;
   final VoidCallback onTap;
-  final VoidCallback? onMoreTap;
+  final VoidCallback onRename;
+  final VoidCallback onDelete;
 
   const PlaylistTile({
     super.key,
     required this.title,
     required this.onTap,
-    this.onMoreTap,
+    required this.onRename,
+    required this.onDelete,
   });
 
   @override
@@ -39,11 +41,26 @@ class PlaylistTile extends StatelessWidget {
                 overflow: TextOverflow.ellipsis,
               ),
             ),
-            if (onMoreTap != null)
-              IconButton(
-                icon: const Icon(Icons.more_vert, color: Colors.white70),
-                onPressed: onMoreTap,
-              ),
+            PopupMenuButton<String>(
+              icon: const Icon(Icons.more_vert, color: Colors.white70),
+              onSelected: (value) {
+                if (value == 'rename') {
+                  onRename();
+                } else if (value == 'delete') {
+                  onDelete();
+                }
+              },
+              itemBuilder: (context) => [
+                const PopupMenuItem(
+                  value: 'rename',
+                  child: Text('Rename'),
+                ),
+                const PopupMenuItem(
+                  value: 'delete',
+                  child: Text('Delete'),
+                ),
+              ],
+            ),
           ],
         ),
       ),

@@ -1,31 +1,15 @@
 import 'dart:io';
 import 'dart:isolate';
-import 'package:flutter/foundation.dart';
 import 'package:music_player/models/album_group.dart';
 import 'package:music_player/models/artist_group.dart';
 import 'package:music_player/models/folder_group.dart';
-import 'package:music_player/models/group_music.dart';
 import 'package:music_player/models/song.dart';
 import 'package:music_player/services/music_cache_service.dart';
 import 'package:music_player/services/music_scanner.dart';
 
-
 class MusicService {
   MusicService._();
   static final MusicService instance = MusicService._();
-
-  /// SONGS
-  final ValueNotifier<List<Song>> songs = ValueNotifier([]);
-
-  /// GROUPS
-  final ValueNotifier<List<FolderGroup>> folderGroup = ValueNotifier([]);
-  final ValueNotifier<List<ArtistGroup>> artistGroup = ValueNotifier([]);
-  final ValueNotifier<List<AlbumGroup>> albumGroup = ValueNotifier([]);
-
-  /// STATE
-  final ValueNotifier<bool> isLoading = ValueNotifier(false);
-  final ValueNotifier<bool> isScanned = ValueNotifier(false);
-  final ValueNotifier<GroupMusic?> selectedGroup = ValueNotifier(null);
 
   ReceivePort? _receivePort;
   Isolate? _isolate;
@@ -34,11 +18,26 @@ class MusicService {
   final Map<String, ArtistGroup> _artistMap = {};
   final Map<String, AlbumGroup> _albumMap = {};
 
-  Future<void> loadSongs() async {
-    if (isLoading.value || isScanned.value) return;
+  bool _isLoading = false;
+  bool _isScanned = false;
+  bool get isLoading => _isLoading;
+  bool get isScanned => _isScanned;
+
+  Future<void> loadSongs({
+    required Function(Song) onSongInserted,
+    required Function(List<FolderGroup>) onFolderGroupsUpdated,
+    required Function(List<ArtistGroup>) onArtistGroupsUpdated,
+    required Function(List<AlbumGroup>) onAlbumGroupsUpdated,
+    required Function(bool) onLoadingChanged,
+    required Function(bool) onScannedChanged,
+    required Function() onScanFinished,
+    required Future<List<Song>> Function() getSongsList,
+  }) async {
+    if (_isLoading || _isScanned) return;
 
     _reset();
-    isLoading.value = true;
+    _isLoading = true;
+    onLoadingChanged(true);
 
     /// ===============================
     /// LOAD DARI CACHE DULU
@@ -47,11 +46,14 @@ class MusicService {
 
     if (cacheSongs.isNotEmpty) {
       for (final song in cacheSongs) {
-        _insertSongRealtime(song);
+        _insertSongRealtime(song, onSongInserted, onFolderGroupsUpdated, onArtistGroupsUpdated, onAlbumGroupsUpdated);
       }
 
-      isLoading.value = false;
-      isScanned.value = true;
+      _isLoading = false;
+      onLoadingChanged(false);
+      _isScanned = true;
+      onScannedChanged(true);
+      onScanFinished();
       return;
     }
 
@@ -67,18 +69,24 @@ class MusicService {
 
     _receivePort!.listen((data) {
       if (data == null) {
-        _finishScan();
+        _finishScan(onScanFinished, onLoadingChanged, onScannedChanged, getSongsList);
         return;
       }
 
       if (data is Song) {
-        _insertSongRealtime(data);
+        _insertSongRealtime(data, onSongInserted, onFolderGroupsUpdated, onArtistGroupsUpdated, onAlbumGroupsUpdated);
       }
     });
   }
 
-  void _insertSongRealtime(Song song) {
-    songs.value = [...songs.value, song];
+  void _insertSongRealtime(
+    Song song,
+    Function(Song) onSongInserted,
+    Function(List<FolderGroup>) onFolderGroupsUpdated,
+    Function(List<ArtistGroup>) onArtistGroupsUpdated,
+    Function(List<AlbumGroup>) onAlbumGroupsUpdated,
+  ) {
+    onSongInserted(song);
 
     /// folder
     final folderPath = File(song.path).parent.path;
@@ -94,7 +102,7 @@ class MusicService {
       );
     }
 
-    folderGroup.value = _folderMap.values.toList();
+    onFolderGroupsUpdated(_folderMap.values.toList());
 
     /// artist
     final artist =
@@ -109,7 +117,7 @@ class MusicService {
       );
     }
 
-    artistGroup.value = _artistMap.values.toList();
+    onArtistGroupsUpdated(_artistMap.values.toList());
 
     /// album
     final album =
@@ -124,15 +132,25 @@ class MusicService {
       );
     }
 
-    albumGroup.value = _albumMap.values.toList();
+    onAlbumGroupsUpdated(_albumMap.values.toList());
   }
 
-  Future<void> _finishScan() async {
-    isLoading.value = false;
-    isScanned.value = true;
+  Future<void> _finishScan(
+    Function() onScanFinished,
+    Function(bool) onLoadingChanged,
+    Function(bool) onScannedChanged,
+    Future<List<Song>> Function() getSongsList,
+  ) async {
+    _isLoading = false;
+    onLoadingChanged(false);
+    _isScanned = true;
+    onScannedChanged(true);
 
     /// simpan ke cache setelah scan selesai
-    await MusicCacheService.saveSongs(songs.value);
+    final songs = await getSongsList();
+    await MusicCacheService.saveSongs(songs);
+
+    onScanFinished();
 
     _receivePort?.close();
     _receivePort = null;
@@ -141,11 +159,29 @@ class MusicService {
     _isolate = null;
   }
 
-  Future<void> refreshSongs() async {
+  Future<void> refreshSongs({
+    required Function(Song) onSongInserted,
+    required Function(List<FolderGroup>) onFolderGroupsUpdated,
+    required Function(List<ArtistGroup>) onArtistGroupsUpdated,
+    required Function(List<AlbumGroup>) onAlbumGroupsUpdated,
+    required Function(bool) onLoadingChanged,
+    required Function(bool) onScannedChanged,
+    required Function() onScanFinished,
+    required Future<List<Song>> Function() getSongsList,
+  }) async {
     await MusicCacheService.clear(); // hapus cache
     stopScan();
     _reset();
-    await loadSongs();
+    await loadSongs(
+      onSongInserted: onSongInserted,
+      onFolderGroupsUpdated: onFolderGroupsUpdated,
+      onArtistGroupsUpdated: onArtistGroupsUpdated,
+      onAlbumGroupsUpdated: onAlbumGroupsUpdated,
+      onLoadingChanged: onLoadingChanged,
+      onScannedChanged: onScannedChanged,
+      onScanFinished: onScanFinished,
+      getSongsList: getSongsList,
+    );
   }
 
   void stopScan() {
@@ -155,32 +191,18 @@ class MusicService {
     _isolate?.kill(priority: Isolate.immediate);
     _isolate = null;
 
-    isLoading.value = false;
+    _isLoading = false;
   }
 
   void _reset() {
-    songs.value = [];
-
-    folderGroup.value = [];
-    artistGroup.value = [];
-    albumGroup.value = [];
-
     _folderMap.clear();
     _artistMap.clear();
     _albumMap.clear();
 
-    isScanned.value = false;
+    _isScanned = false;
   }
 
   void dispose() {
     stopScan();
-
-    songs.dispose();
-    folderGroup.dispose();
-    artistGroup.dispose();
-    albumGroup.dispose();
-
-    isLoading.dispose();
-    isScanned.dispose();
   }
 }
