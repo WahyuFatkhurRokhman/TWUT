@@ -47,20 +47,25 @@ class _HistoryPageState extends State<HistoryPage> {
   Widget build(BuildContext context) {
     return Scaffold(
       backgroundColor: AppColors.background,
-      appBar: AppBar(title: const Text('History'), backgroundColor: AppColors.card),
+      appBar: AppBar(
+        title: const Text('History', style: TextStyle(color: AppColors.textPrimary)),
+        backgroundColor: Colors.transparent,
+        elevation: 0,
+      ),
       body: _isLoading
-          ? const Center(child: CircularProgressIndicator())
+          ? const Center(child: CircularProgressIndicator(color: AppColors.accent))
           : _historySongs.isEmpty
-              ? const Center(child: Text('No history yet', style: TextStyle(color: Colors.white60)))
+              ? const Center(child: Text('No history yet', style: TextStyle(color: AppColors.textSecondary)))
               : RefreshIndicator(
+                  color: AppColors.accent,
                   onRefresh: _loadHistory,
                   child: ListView.builder(
                     itemCount: _historySongs.length,
                     itemBuilder: (context, index) {
                       final song = _historySongs[index];
                       return ListTile(
-                        title: Text(song.title, style: const TextStyle(color: Colors.white)),
-                        subtitle: Text(song.artist, style: const TextStyle(color: Colors.white70)),
+                        title: Text(song.title, style: const TextStyle(color: AppColors.textPrimary)),
+                        subtitle: Text(song.artist, style: const TextStyle(color: AppColors.textSecondary)),
                         onTap: () async {
                           await AudioManager().playLocalSong(song);
                           if (context.mounted) {

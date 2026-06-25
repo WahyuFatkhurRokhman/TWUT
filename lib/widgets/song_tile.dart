@@ -10,6 +10,7 @@ class SongTile extends StatelessWidget {
   final VoidCallback onAddToQueue;
   final VoidCallback onDetail;
   final VoidCallback onSinglePlay;
+  final VoidCallback? onDelete;
   final bool isPlaying;
 
   const SongTile({
@@ -19,6 +20,7 @@ class SongTile extends StatelessWidget {
     required this.onAddToQueue,
     required this.onDetail,
     required this.onSinglePlay,
+    this.onDelete,
     this.isPlaying = false,
   });
 
@@ -52,6 +54,8 @@ class SongTile extends StatelessWidget {
               context: context,
               builder: (context) => AddToPlaylistDialog(db: AppDatabase(), song: song),
             );
+          } else if (value == 'delete') {
+            onDelete?.call();
           }
         },
         itemBuilder: (context) => [
@@ -71,6 +75,11 @@ class SongTile extends StatelessWidget {
             value: 'detail',
             child: Text('Info Detail'),
           ),
+          if (onDelete != null)
+            const PopupMenuItem(
+              value: 'delete',
+              child: Text('Hapus dari Playlist', style: TextStyle(color: Colors.red)),
+            ),
         ],
         icon: Icon(
           Icons.more_vert,

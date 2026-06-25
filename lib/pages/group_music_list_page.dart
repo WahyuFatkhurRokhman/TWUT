@@ -21,20 +21,34 @@ class GroupMusicListPage extends StatelessWidget {
       ) async {
     final audio = AudioManager();
 
-    await audio.playLocalGroup(groupMusic, startIndex: index);
+    try {
+      await audio.playLocalGroup(groupMusic, startIndex: index);
 
-    if (context.mounted) {
-      NavigationUtil.slideUp(context, const MusicPlayerPage(), root: true);
+      if (context.mounted) {
+        NavigationUtil.slideUp(context, const MusicPlayerPage(), root: true);
+      }
+    } catch (e) {
+      debugPrint("Error playing local group: $e");
+      if (context.mounted) {
+        SnackbarUtil.showError(context, message: 'Gagal memutar musik: $e');
+      }
     }
   }
 
   Future<void> _singlePlay(BuildContext context, Song song) async {
     final audio = AudioManager();
 
-    await audio.playLocalSong(song);
+    try {
+      await audio.playLocalSong(song);
 
-    if (context.mounted) {
-      NavigationUtil.slideUp(context, const MusicPlayerPage(), root: true);
+      if (context.mounted) {
+        NavigationUtil.slideUp(context, const MusicPlayerPage(), root: true);
+      }
+    } catch (e) {
+      debugPrint("Error playing local song: $e");
+      if (context.mounted) {
+        SnackbarUtil.showError(context, message: 'Gagal memutar musik: $e');
+      }
     }
   }
 

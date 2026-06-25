@@ -1,20 +1,34 @@
 import 'package:flutter/material.dart';
 import 'app_colors.dart';
 
-class AppTextStyles {
-  static const TextStyle title = TextStyle(
-    color: AppColors.textPrimary,
-    fontSize: 18,
+class AppTextStyle {
+  static const TextStyle heading1 = TextStyle(
+    fontFamily: 'Inter',
     fontWeight: FontWeight.bold,
+    fontSize: 32,
+    color: AppColors.accent,
   );
 
-  static const TextStyle body = TextStyle(
+  static const TextStyle heading2 = TextStyle(
+    fontFamily: 'Inter',
+    fontWeight: FontWeight.w900, // Extra Bold
+    fontSize: 48,
     color: AppColors.textPrimary,
-    fontSize: 14,
+    letterSpacing: -2.4,
   );
 
-  static const TextStyle subtitle = TextStyle(
+  static const TextStyle bodyRegular = TextStyle(
+    fontFamily: 'Inter',
+    fontWeight: FontWeight.normal,
+    fontSize: 16,
     color: AppColors.textSecondary,
-    fontSize: 13,
+  );
+
+  static const TextStyle labelSmall = TextStyle(
+    fontFamily: 'JetBrains Mono',
+    fontWeight: FontWeight.w500,
+    fontSize: 10,
+    color: AppColors.textSecondary,
+    letterSpacing: 1.0,
   );
 }

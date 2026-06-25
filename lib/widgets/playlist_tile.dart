@@ -4,6 +4,8 @@ import 'package:music_player/config/app_colors.dart';
 class PlaylistTile extends StatelessWidget {
   final String title;
   final VoidCallback onTap;
+  final VoidCallback onPlay;
+  final VoidCallback onShufflePlay;
   final VoidCallback onRename;
   final VoidCallback onDelete;
 
@@ -11,6 +13,8 @@ class PlaylistTile extends StatelessWidget {
     super.key,
     required this.title,
     required this.onTap,
+    required this.onPlay,
+    required this.onShufflePlay,
     required this.onRename,
     required this.onDelete,
   });
@@ -28,7 +32,26 @@ class PlaylistTile extends StatelessWidget {
         ),
         child: Row(
           children: [
-            const Icon(Icons.playlist_play, color: AppColors.accent, size: 32),
+            PopupMenuButton<String>(
+              icon: const Icon(Icons.playlist_play, color: AppColors.accent, size: 32),
+              onSelected: (value) {
+                if (value == 'play') {
+                  onPlay();
+                } else if (value == 'shuffle') {
+                  onShufflePlay();
+                }
+              },
+              itemBuilder: (context) => [
+                const PopupMenuItem(
+                  value: 'play',
+                  child: Text('Mainkan'),
+                ),
+                const PopupMenuItem(
+                  value: 'shuffle',
+                  child: Text('Mainkan (Shuffle)'),
+                ),
+              ],
+            ),
             const SizedBox(width: 12),
             Expanded(
               child: Text(
@@ -44,13 +67,25 @@ class PlaylistTile extends StatelessWidget {
             PopupMenuButton<String>(
               icon: const Icon(Icons.more_vert, color: Colors.white70),
               onSelected: (value) {
-                if (value == 'rename') {
+                if (value == 'play') {
+                  onPlay();
+                } else if (value == 'shuffle') {
+                  onShufflePlay();
+                } else if (value == 'rename') {
                   onRename();
                 } else if (value == 'delete') {
                   onDelete();
                 }
               },
               itemBuilder: (context) => [
+                const PopupMenuItem(
+                  value: 'play',
+                  child: Text('Mainkan'),
+                ),
+                const PopupMenuItem(
+                  value: 'shuffle',
+                  child: Text('Mainkan (Shuffle)'),
+                ),
                 const PopupMenuItem(
                   value: 'rename',
                   child: Text('Rename'),

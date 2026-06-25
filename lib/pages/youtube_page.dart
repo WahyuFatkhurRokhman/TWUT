@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:music_player/config/app_colors.dart';
 import 'package:music_player/pages/youtube_search_delegate.dart';
 
 class YoutubePage extends StatelessWidget {
@@ -7,14 +8,12 @@ class YoutubePage extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: Colors.black,
-
+      backgroundColor: AppColors.background,
       appBar: AppBar(
-        title: const Text("Youtube"),
-        backgroundColor: Colors.black,
+        title: const Text("Youtube", style: TextStyle(color: AppColors.textPrimary)),
+        backgroundColor: Colors.transparent,
         elevation: 0,
       ),
-
       body: Column(
         children: [
           const SizedBox(height: 12),
@@ -29,7 +28,7 @@ class YoutubePage extends StatelessWidget {
               child: Text(
                 "Search your favorite music",
                 style: TextStyle(
-                  color: Colors.white70,
+                  color: AppColors.textSecondary,
                   fontSize: 18,
                 ),
               ),
@@ -55,17 +54,17 @@ class YoutubePage extends StatelessWidget {
           margin: const EdgeInsets.symmetric(horizontal: 16),
           padding: const EdgeInsets.symmetric(horizontal: 16),
           decoration: BoxDecoration(
-            color: Colors.white.withOpacity(0.08),
+            color: AppColors.cardBackground,
             borderRadius: BorderRadius.circular(30),
             border: Border.all(
-              color: Colors.white.withOpacity(0.08),
+              color: AppColors.border,
             ),
           ),
-          child: Row(
-            children: const [
+          child: const Row(
+            children: [
               Icon(
                 Icons.search,
-                color: Colors.white70,
+                color: AppColors.textSecondary,
                 size: 22,
               ),
 
@@ -74,7 +73,7 @@ class YoutubePage extends StatelessWidget {
               Text(
                 "Search songs, albums, artists",
                 style: TextStyle(
-                  color: Colors.white70,
+                  color: AppColors.textSecondary,
                   fontSize: 14,
                   fontWeight: FontWeight.w500,
                 ),

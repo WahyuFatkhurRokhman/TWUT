@@ -1,65 +1,36 @@
 import 'package:flutter/material.dart';
+import '../config/app_colors.dart';
 
 class TopBar extends StatelessWidget {
-  final String title;
-  final VoidCallback? onBack;
-
-  /// Optional widgets (biar fleksibel, bukan kaku kayak beton)
-  final Widget? center;
-  final Widget? right;
-
-  const TopBar({
-    super.key,
-    required this.title,
-    this.onBack,
-    this.center,
-    this.right,
-  });
+  const TopBar({super.key});
 
   @override
   Widget build(BuildContext context) {
-    return SafeArea(
-      bottom: false,
-      child: Padding(
-        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
-        child: Row(
-          children: [
-            /// 🔙 LEFT (Back + Title)
-            Expanded(
-              flex: 3,
-              child: Row(
-                children: [
-                  if (onBack != null)
-                    // IconButton(
-                    //   icon: const Icon(Icons.arrow_back),
-                    //   onPressed: onBack,
-                    // ),
-
-                  Expanded(
-                    child: Text(
-                      title,
-                      overflow: TextOverflow.ellipsis,
-                      style: const TextStyle(
-                        fontSize: 18,
-                        fontWeight: FontWeight.bold,
-                      ),
-                    ),
-                  ),
-                ],
-              ),
+    return Container(
+      height: 80,
+      padding: const EdgeInsets.symmetric(horizontal: 40),
+      decoration: const BoxDecoration(
+        color: Color(0xCC131313), // 80% opacity
+        border: Border(bottom: BorderSide(color: AppColors.border)),
+      ),
+      child: Row(
+        children: [
+          Container(
+            width: 448,
+            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
+            decoration: BoxDecoration(
+              color: AppColors.border,
+              borderRadius: BorderRadius.circular(9999),
             ),
-
-            /// 🎯 CENTER (optional: filter, dll)
-            if (center != null)
-              Expanded(
-                flex: 3,
-                child: Center(child: center),
-              ),
-
-            /// 🔼 RIGHT (optional: refresh, action, dll)
-            ?right,
-          ],
-        ),
+            child: const Row(
+              children: [
+                Icon(Icons.search, color: AppColors.textSecondary),
+                SizedBox(width: 8),
+                Text("Search your library...", style: TextStyle(color: AppColors.textSecondary)),
+              ],
+            ),
+          ),
+        ],
       ),
     );
   }

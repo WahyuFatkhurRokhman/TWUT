@@ -8,6 +8,9 @@ import 'package:music_player/services/history_play_local_song.dart';
 import 'package:music_player/services/playlist_service.dart';
 import 'package:music_player/utils/data_notifier.dart';
 import 'package:music_player/utils/navigation_utils.dart';
+import 'package:music_player/widgets/bento_card.dart';
+import 'package:music_player/widgets/album_card.dart';
+import 'package:music_player/config/app_colors.dart';
 
 class HomePage extends StatefulWidget {
   const HomePage({super.key});
@@ -60,16 +63,51 @@ class _HomePageState extends State<HomePage> {
           return MaterialPageRoute(
             settings: settings,
             builder: (_) => Scaffold(
-              backgroundColor: const Color(0xFF0A0A0A),
+              backgroundColor: AppColors.background,
               body: CustomScrollView(
                 slivers: [
-                  const SliverToBoxAdapter(child: _HeroBanner()),
-                  if (_favoriteSongs.isNotEmpty)
-                    _buildSection('Most Played', _favoriteSongs),
+                  // Figma Header & Bento Grid
+                  SliverPadding(
+                    padding: const EdgeInsets.fromLTRB(40, 40, 40, 20),
+                    sliver: SliverToBoxAdapter(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          const Text(
+                            "LIBRARY EXPLORER",
+                            style: TextStyle(
+                              fontFamily: 'JetBrains Mono',
+                              fontSize: 10,
+                              fontWeight: FontWeight.w500,
+                              color: Color(0xFFBCCBB9),
+                              letterSpacing: 1.0,
+                            ),
+                          ),
+                          const SizedBox(height: 8),
+                          const Text(
+                            "Local Music",
+                            style: TextStyle(
+                              fontFamily: 'Inter',
+                              fontSize: 32,
+                              fontWeight: FontWeight.bold,
+                              color: Colors.white,
+                            ),
+                          ),
+                          const SizedBox(height: 24),
+                          _buildBentoGrid(),
+                        ],
+                      ),
+                    ),
+                  ),
+
+                  // Grids of Albums (Songs)
                   if (_recentSongs.isNotEmpty)
-                    _buildSection('Recent Plays', _recentSongs),
-                  if (_recentPlaylists.isNotEmpty)
-                    _buildPlaylistSection('Recent Playlists', _recentPlaylists),
+                    _buildAlbumSection('Recently Played', _recentSongs),
+                  if (_favoriteSongs.isNotEmpty)
+                    _buildAlbumSection('Frequently Played', _favoriteSongs),
+                  
+                  // Bottom Spacer
+                  const SliverToBoxAdapter(child: SizedBox(height: 40)),
                 ],
               ),
             ),
@@ -80,170 +118,124 @@ class _HomePageState extends State<HomePage> {
     );
   }
 
-  Widget _buildPlaylistSection(String title, List<Playlist> playlists) {
-    return SliverPadding(
-      padding: const EdgeInsets.all(16),
-      sliver: SliverList(
-        delegate: SliverChildListDelegate([
-          Text(
-            title,
-            style: const TextStyle(color: Colors.white, fontSize: 20),
-          ),
-          ...playlists.map(
-            (playlist) => ListTile(
-              leading: const Icon(Icons.queue_music, color: Color(0xFF1DB954)),
-              title: Text(
-                playlist.name,
-                style: const TextStyle(color: Colors.white70),
-              ),
-              onTap: () async {
-                final songsData = await _playlistService.getSongsInPlaylist(
-                  playlist.id,
-                );
-                final songs = songsData
-                    .map(
-                      (s) => Song(
-                        path: s.songPath,
-                        title: s.title,
-                        artist: s.artist,
-                        album: s.album,
-                        duration: Duration(milliseconds: s.durationMs ?? 0),
-                      ),
-                    )
-                    .toList();
-                await AudioManager().playPlaylist(songs, playlistId: playlist.id);
-                
-                if (context.mounted) {
-                  NavigationUtil.slideUp(context, const MusicPlayerPage(), root: true);
-                }
+  Widget _buildBentoGrid() {
+    return LayoutBuilder(
+      builder: (context, constraints) {
+        // Grid responds to screen width
+        int crossAxisCount = constraints.maxWidth > 1000 ? 4 : 2;
+        double childAspectRatio = constraints.maxWidth > 1000 ? 1.5 : 1.3;
+
+        return GridView.count(
+          shrinkWrap: true,
+          physics: const NeverScrollableScrollPhysics(),
+          crossAxisCount: crossAxisCount,
+          mainAxisSpacing: 16,
+          crossAxisSpacing: 16,
+          childAspectRatio: childAspectRatio,
+          children: [
+            BentoCard(
+              icon: Icons.folder_open_rounded,
+              title: "Hi-Res Masters",
+              subtitle: "245 tracks • FLAC Lossless",
+              iconColor: const Color(0xFF53E076),
+              onTap: () {},
+            ),
+            BentoCard(
+              icon: Icons.download_rounded,
+              title: "Downloads",
+              subtitle: "${_recentSongs.length} local files",
+              iconColor: Colors.blueAccent,
+              onTap: () {},
+            ),
+            BentoCard(
+              icon: Icons.playlist_play_rounded,
+              title: "My Playlists",
+              subtitle: "${_recentPlaylists.length} playlists",
+              iconColor: Colors.purpleAccent,
+              onTap: () {
+                // Navigate to playlists via sidebar index or custom tab
               },
             ),
-          ),
-        ]),
-      ),
+            BentoCard(
+              icon: Icons.add_circle_outline_rounded,
+              title: "Add Folder",
+              subtitle: "Link local storage",
+              iconColor: Colors.grey,
+              onTap: () {},
+            ),
+          ],
+        );
+      },
     );
   }
 
-  Widget _buildSection(String title, List<Song> items) {
+  Widget _buildAlbumSection(String title, List<Song> songs) {
     return SliverPadding(
-      padding: const EdgeInsets.all(16),
-      sliver: SliverList(
-        delegate: SliverChildListDelegate([
-          Text(
-            title,
-            style: const TextStyle(color: Colors.white, fontSize: 20),
-          ),
-          if (items.isEmpty)
-            const Padding(
-              padding: EdgeInsets.symmetric(vertical: 8),
-              child: Text(
-                'No songs yet',
-                style: TextStyle(color: Colors.white38, fontSize: 14),
-              ),
-            )
-          else
-            ...items.map(
-              (song) => ListTile(
-                contentPadding: EdgeInsets.zero,
-                leading: const Icon(Icons.music_note, color: Color(0xFF1DB954)),
-                title: Text(
-                  song.title,
-                  style: const TextStyle(color: Colors.white70),
+      padding: const EdgeInsets.symmetric(horizontal: 40, vertical: 20),
+      sliver: SliverToBoxAdapter(
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Row(
+              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+              children: [
+                Text(
+                  title,
+                  style: const TextStyle(
+                    color: Colors.white,
+                    fontSize: 20,
+                    fontWeight: FontWeight.bold,
+                  ),
                 ),
-                subtitle: Text(
-                  song.artist,
-                  style: const TextStyle(color: Colors.white38),
+                TextButton(
+                  onPressed: () {},
+                  child: const Text(
+                    "View All",
+                    style: TextStyle(color: Color(0xFF53E076)),
+                  ),
                 ),
-                onTap: () async {
-                  await AudioManager().playLocalSong(song);
-                  if (context.mounted) {
-                    NavigationUtil.slideUp(context, const MusicPlayerPage(), root: true);
-                  }
-                },
-              ),
+              ],
             ),
-        ]),
-      ),
-    );
-  }
-}
+            const SizedBox(height: 16),
+            LayoutBuilder(
+              builder: (context, constraints) {
+                // Responsive grid count for album cards
+                int crossAxisCount = 6;
+                if (constraints.maxWidth < 600) {
+                  crossAxisCount = 2;
+                } else if (constraints.maxWidth < 1000) {
+                  crossAxisCount = 4;
+                }
 
-// ── HERO BANNER ──────────────────────────────────────────────────────────────
-
-class _HeroBanner extends StatelessWidget {
-  const _HeroBanner();
-
-  @override
-  Widget build(BuildContext context) {
-    return Container(
-      height: 220,
-      width: double.infinity,
-      decoration: const BoxDecoration(
-        gradient: LinearGradient(
-          colors: [Color(0xFF1DB954), Color(0xFF0d6e32), Color(0xFF0A0A0A)],
-          begin: Alignment.topLeft,
-          end: Alignment.bottomRight,
-          stops: [0.0, 0.5, 1.0],
+                return GridView.builder(
+                  shrinkWrap: true,
+                  physics: const NeverScrollableScrollPhysics(),
+                  itemCount: songs.length > crossAxisCount ? crossAxisCount : songs.length,
+                  gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
+                    crossAxisCount: crossAxisCount,
+                    crossAxisSpacing: 16,
+                    mainAxisSpacing: 16,
+                    childAspectRatio: 0.72,
+                  ),
+                  itemBuilder: (context, index) {
+                    final song = songs[index];
+                    return AlbumCard(
+                      title: song.title,
+                      artist: song.artist,
+                      badgeText: "LOCAL",
+                      onTap: () async {
+                        await AudioManager().playLocalSong(song);
+                        if (context.mounted) {
+                          NavigationUtil.slideUp(context, const MusicPlayerPage(), root: true);
+                        }
+                      },
+                    );
+                  },
+                );
+              },
+            ),
+          ],
         ),
-      ),
-      child: Stack(
-        children: [
-          Positioned(
-            top: -50,
-            right: -40,
-            child: Container(
-              width: 200,
-              height: 200,
-              decoration: const BoxDecoration(
-                shape: BoxShape.circle,
-                color: Color.fromRGBO(255, 255, 255, 0.05),
-              ),
-            ),
-          ),
-          Positioned(
-            bottom: -60,
-            left: -30,
-            child: Container(
-              width: 240,
-              height: 240,
-              decoration: const BoxDecoration(
-                shape: BoxShape.circle,
-                color: Color.fromRGBO(255, 255, 255, 0.04),
-              ),
-            ),
-          ),
-          SafeArea(
-            child: Padding(
-              padding: const EdgeInsets.fromLTRB(20, 16, 20, 20),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                mainAxisAlignment: MainAxisAlignment.end,
-                children: [
-                  const Text(
-                    'Welcome',
-                    style: TextStyle(
-                      fontSize: 11,
-                      fontWeight: FontWeight.w700,
-                      color: Color.fromRGBO(255, 255, 255, 0.5),
-                      letterSpacing: 2.5,
-                    ),
-                  ),
-                  const SizedBox(height: 4),
-                  const Text(
-                    'TWUT',
-                    style: TextStyle(
-                      fontSize: 48,
-                      fontWeight: FontWeight.w900,
-                      color: Colors.white,
-                      letterSpacing: -1,
-                      height: 1,
-                    ),
-                  ),
-                ],
-              ),
-            ),
-          ),
-        ],
       ),
     );
   }

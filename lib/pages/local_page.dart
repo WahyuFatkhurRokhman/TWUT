@@ -286,39 +286,26 @@ class LocalPageState extends State<LocalPage> {
     return Scaffold(
       backgroundColor: AppColors.background,
       body: SafeArea(
-        child: Container(
-          decoration: const BoxDecoration(
-            gradient: LinearGradient(
-              colors: [
-                Color(0xFF000000),
-                Color(0xFF121212),
-                Color(0xFF000000),
-              ],
-              begin: Alignment.topLeft,
-              end: Alignment.bottomRight,
-            ),
-          ),
-          child: Column(
-            children: [
-              buildTopBar(),
+        child: Column(
+          children: [
+            buildTopBar(),
 
-              const SizedBox(height: 5),
+            const SizedBox(height: 5),
 
-              Expanded(
-                child: Navigator(
-                  key: NavigationUtil.nestedKey,
-                  initialRoute: AppRouter.home,
-                  onGenerateRoute: AppRouter.generateLocalRoute,
-                  observers: [
-                    NavigatorObserverProxy(
-                      onPop: _onNavigationChanged,
-                      onPush: _onNavigationChanged,
-                    )
-                  ],
-                ),
+            Expanded(
+              child: Navigator(
+                key: NavigationUtil.nestedKey,
+                initialRoute: AppRouter.home,
+                onGenerateRoute: AppRouter.generateLocalRoute,
+                observers: [
+                  NavigatorObserverProxy(
+                    onPop: _onNavigationChanged,
+                    onPush: _onNavigationChanged,
+                  )
+                ],
               ),
-            ],
-          ),
+            ),
+          ],
         ),
       ),
     );
