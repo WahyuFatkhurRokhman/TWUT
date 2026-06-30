@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import 'package:music_player/data/database.dart';
 import 'package:music_player/models/song.dart';
 import 'package:music_player/widgets/add_to_playlist_dialog.dart';
+import 'package:music_player/widgets/media_artwork.dart';
 
 class SongTile extends StatelessWidget {
   final Song song;
@@ -27,9 +28,14 @@ class SongTile extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return ListTile(
-      leading: Icon(
-        Icons.music_note,
-        color: isPlaying ? Colors.blueAccent : Colors.blue,
+      leading: SizedBox(
+        width: 48,
+        height: 48,
+        child: MediaArtwork(
+          media: song.toNowPlaying(),
+          size: 48,
+          radius: 8,
+        ),
       ),
       title: Text(
         song.title,

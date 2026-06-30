@@ -61,6 +61,7 @@ class AlbumCard extends StatelessWidget {
               ),
               maxLines: 1,
               overflow: TextOverflow.ellipsis,
+              softWrap: false,
             ),
             const SizedBox(height: 4),
             Text(
@@ -71,6 +72,7 @@ class AlbumCard extends StatelessWidget {
               ),
               maxLines: 1,
               overflow: TextOverflow.ellipsis,
+              softWrap: false,
             ),
             const SizedBox(height: 8),
             // Small Platform/Format Badge

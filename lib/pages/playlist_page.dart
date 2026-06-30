@@ -139,6 +139,7 @@ class _PlaylistPageState extends State<PlaylistPage> {
 
                         return PlaylistTile(
                           title: playlist.name,
+                          artworkList: const [], // TODO: Load artwork here
                           onTap: () => _navigateToPlaylist(context, playlist),
                           onPlay: () async {
                             final songsData = await _playlistService.getSongsInPlaylist(playlist.id);

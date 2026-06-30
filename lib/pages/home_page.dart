@@ -1,3 +1,4 @@
+import 'dart:isolate';
 import 'package:flutter/material.dart';
 import 'package:music_player/data/database.dart';
 import 'package:music_player/models/song.dart';
@@ -8,6 +9,7 @@ import 'package:music_player/services/history_play_local_song.dart';
 import 'package:music_player/services/playlist_service.dart';
 import 'package:music_player/utils/data_notifier.dart';
 import 'package:music_player/utils/navigation_utils.dart';
+import 'package:music_player/services/music_scanner.dart';
 import 'package:music_player/widgets/bento_card.dart';
 import 'package:music_player/widgets/album_card.dart';
 import 'package:music_player/config/app_colors.dart';
@@ -55,6 +57,35 @@ class _HomePageState extends State<HomePage> {
     }
   }
 
+  Future<void> _startScanning() async {
+    // 1. Cek izin
+    if (!(await MusicScanner.hasPermissions())) {
+      if (!(await MusicScanner.requestPermissions())) {
+        print("Izin tidak diberikan");
+        return;
+      }
+    }
+
+    // 2. Setup ReceivePort untuk menerima data dari Isolate
+    final receivePort = ReceivePort();
+
+    // 3. Spawn Isolate
+    await Isolate.spawn(MusicScanner.scanMusicStream, receivePort.sendPort);
+
+    // 4. Dengarkan data yang dikirim dari Isolate
+    receivePort.listen((message) {
+      if (message is Song) {
+        // Simpan lagu ke database jika diperlukan
+        print("Ditemukan lagu: ${message.title}");
+      } else if (message == null) {
+        // Pemindaian selesai
+        receivePort.close();
+        _loadData(); // Refresh UI setelah scan selesai
+        print("Scan selesai");
+      }
+    });
+  }
+
   @override
   Widget build(BuildContext context) {
     return Navigator(
@@ -85,7 +116,7 @@ class _HomePageState extends State<HomePage> {
                           ),
                           const SizedBox(height: 8),
                           const Text(
-                            "Local Music",
+                            "TWUT",
                             style: TextStyle(
                               fontFamily: 'Inter',
                               fontSize: 32,
@@ -138,14 +169,20 @@ class _HomePageState extends State<HomePage> {
               title: "Hi-Res Masters",
               subtitle: "245 tracks • FLAC Lossless",
               iconColor: const Color(0xFF53E076),
-              onTap: () {},
+              onTap: () {
+                // Future: Navigate to a filtered view
+              },
             ),
             BentoCard(
               icon: Icons.download_rounded,
               title: "Downloads",
               subtitle: "${_recentSongs.length} local files",
               iconColor: Colors.blueAccent,
-              onTap: () {},
+              onTap: () {
+                // Navigate to Local Page
+                // Assuming we can access the parent or use a global route
+                // For now, simple navigation if possible or placeholder
+              },
             ),
             BentoCard(
               icon: Icons.playlist_play_rounded,
@@ -153,7 +190,7 @@ class _HomePageState extends State<HomePage> {
               subtitle: "${_recentPlaylists.length} playlists",
               iconColor: Colors.purpleAccent,
               onTap: () {
-                // Navigate to playlists via sidebar index or custom tab
+                // Navigate to playlist page
               },
             ),
             BentoCard(
@@ -161,7 +198,9 @@ class _HomePageState extends State<HomePage> {
               title: "Add Folder",
               subtitle: "Link local storage",
               iconColor: Colors.grey,
-              onTap: () {},
+              onTap: () async {
+                await _startScanning(); // Panggil fungsi di atas
+              },
             ),
           ],
         );
@@ -215,7 +254,7 @@ class _HomePageState extends State<HomePage> {
                     crossAxisCount: crossAxisCount,
                     crossAxisSpacing: 16,
                     mainAxisSpacing: 16,
-                    childAspectRatio: 0.72,
+                    childAspectRatio: 0.50,
                   ),
                   itemBuilder: (context, index) {
                     final song = songs[index];

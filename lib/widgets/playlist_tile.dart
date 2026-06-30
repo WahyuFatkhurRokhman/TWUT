@@ -1,8 +1,10 @@
+import 'dart:typed_data';
 import 'package:flutter/material.dart';
 import 'package:music_player/config/app_colors.dart';
 
 class PlaylistTile extends StatelessWidget {
   final String title;
+  final List<Uint8List?> artworkList;
   final VoidCallback onTap;
   final VoidCallback onPlay;
   final VoidCallback onShufflePlay;
@@ -12,6 +14,7 @@ class PlaylistTile extends StatelessWidget {
   const PlaylistTile({
     super.key,
     required this.title,
+    this.artworkList = const [],
     required this.onTap,
     required this.onPlay,
     required this.onShufflePlay,
@@ -32,25 +35,22 @@ class PlaylistTile extends StatelessWidget {
         ),
         child: Row(
           children: [
-            PopupMenuButton<String>(
-              icon: const Icon(Icons.playlist_play, color: AppColors.accent, size: 32),
-              onSelected: (value) {
-                if (value == 'play') {
-                  onPlay();
-                } else if (value == 'shuffle') {
-                  onShufflePlay();
-                }
-              },
-              itemBuilder: (context) => [
-                const PopupMenuItem(
-                  value: 'play',
-                  child: Text('Mainkan'),
-                ),
-                const PopupMenuItem(
-                  value: 'shuffle',
-                  child: Text('Mainkan (Shuffle)'),
-                ),
-              ],
+            Container(
+              width: 48,
+              height: 48,
+              decoration: BoxDecoration(
+                color: Colors.grey[800],
+                borderRadius: BorderRadius.circular(8),
+              ),
+              child: artworkList.isEmpty
+                  ? const Icon(Icons.playlist_play, color: AppColors.accent, size: 32)
+                  : GridView.count(
+                      crossAxisCount: 2,
+                      physics: const NeverScrollableScrollPhysics(),
+                      children: artworkList.take(4).map((bytes) => 
+                        bytes != null ? Image.memory(bytes, fit: BoxFit.cover) : const SizedBox()
+                      ).toList(),
+                    ),
             ),
             const SizedBox(width: 12),
             Expanded(
