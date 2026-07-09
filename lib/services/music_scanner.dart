@@ -269,7 +269,7 @@ class MusicScanner {
         r'C:\Program Files',
         r'C:\Program Files (x86)',
         r'C:\ProgramData',
-        r'\AppData\Local\',
+        r'\AppData',
         'Application Data',
         '.cache',
         'node_modules',
