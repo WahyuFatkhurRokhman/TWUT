@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import 'package:music_player/data/database.dart';
 import 'package:music_player/models/song.dart';
 import 'package:music_player/widgets/add_to_playlist_dialog.dart';
+import 'package:music_player/widgets/media_artwork.dart';
 
 class SongTile extends StatelessWidget {
   final Song song;
@@ -10,6 +11,7 @@ class SongTile extends StatelessWidget {
   final VoidCallback onAddToQueue;
   final VoidCallback onDetail;
   final VoidCallback onSinglePlay;
+  final VoidCallback? onDelete;
   final bool isPlaying;
 
   const SongTile({
@@ -19,15 +21,21 @@ class SongTile extends StatelessWidget {
     required this.onAddToQueue,
     required this.onDetail,
     required this.onSinglePlay,
+    this.onDelete,
     this.isPlaying = false,
   });
 
   @override
   Widget build(BuildContext context) {
     return ListTile(
-      leading: Icon(
-        Icons.music_note,
-        color: isPlaying ? Colors.blueAccent : Colors.blue,
+      leading: SizedBox(
+        width: 48,
+        height: 48,
+        child: MediaArtwork(
+          media: song.toNowPlaying(),
+          size: 48,
+          radius: 8,
+        ),
       ),
       title: Text(
         song.title,
@@ -52,6 +60,8 @@ class SongTile extends StatelessWidget {
               context: context,
               builder: (context) => AddToPlaylistDialog(db: AppDatabase(), song: song),
             );
+          } else if (value == 'delete') {
+            onDelete?.call();
           }
         },
         itemBuilder: (context) => [
@@ -71,6 +81,11 @@ class SongTile extends StatelessWidget {
             value: 'detail',
             child: Text('Info Detail'),
           ),
+          if (onDelete != null)
+            const PopupMenuItem(
+              value: 'delete',
+              child: Text('Hapus dari Playlist', style: TextStyle(color: Colors.red)),
+            ),
         ],
         icon: Icon(
           Icons.more_vert,

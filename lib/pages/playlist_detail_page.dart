@@ -71,7 +71,7 @@ class _PlaylistDetailPageState extends State<PlaylistDetailPage> {
     await audio.playLocalSong(song);
 
     if (context.mounted) {
-      NavigationUtil.slideUp(context, const MusicPlayerPage(), root: true);
+      NavigationUtil.push(context, const MusicPlayerPage(), root: true, transition: PageTransition.slideUp);
     }
   }
 
@@ -81,7 +81,7 @@ class _PlaylistDetailPageState extends State<PlaylistDetailPage> {
     audio.playPlaylist(_songs, playlistId: widget.playlist.id);
 
     if (context.mounted) {
-      NavigationUtil.slideUp(context, const MusicPlayerPage(), root: true);
+      NavigationUtil.push(context, const MusicPlayerPage(), root: true, transition: PageTransition.slideUp);
     }
   }
 
@@ -122,12 +122,37 @@ class _PlaylistDetailPageState extends State<PlaylistDetailPage> {
         ),
         actions: [
           TextButton(
-            onPressed: () => Navigator.pop(context),
+            onPressed: () => NavigationUtil.pop(context),
             child: const Text('Tutup'),
           ),
         ],
       ),
     );
+  }
+
+  Future<void> _deleteSong(BuildContext context, Song song) async {
+    final confirm = await showDialog<bool>(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: const Text('Hapus dari Playlist?'),
+        content: Text('Anda yakin ingin menghapus "${song.title}" dari playlist ini?'),
+        actions: [
+          TextButton(onPressed: () => NavigationUtil.pop(context, result: false), child: const Text('Batal')),
+          TextButton(onPressed: () => NavigationUtil.pop(context, result: true), child: const Text('Hapus')),
+        ],
+      ),
+    );
+
+    if (confirm == true) {
+      await _playlistService.removeSongFromPlaylist(
+        widget.playlist.id,
+        song.path,
+      );
+      if (context.mounted) {
+        SnackbarUtil.showSuccess(context, message: 'Lagu dihapus dari playlist');
+        _loadSongs();
+      }
+    }
   }
 
   @override
@@ -136,44 +161,68 @@ class _PlaylistDetailPageState extends State<PlaylistDetailPage> {
       backgroundColor: Colors.transparent,
       body: _isLoading
           ? const Center(child: CircularProgressIndicator())
-          : SafeArea(
-              child: Column(
-                children: [
-                  Expanded(
-                    child: ListView.separated(
-                      itemCount: _songs.length,
-                      separatorBuilder: (_, _) =>
-                          const Divider(height: 1, indent: 70),
-                      itemBuilder: (context, index) {
-                        final song = _songs[index];
-                        return SongTile(
-                          song: song,
-                          isPlaying: false,
-                          onTap: () async {
-                            AudioManager().playPlaylist(
-                              _songs,
-                              playlistId: widget.playlist.id,
-                            );
-                            AudioManager().local.queue.setIndex(index);
-                            await AudioManager().local.play();
-
-                            if (context.mounted) {
-                              NavigationUtil.slideUp(
-                                context,
-                                const MusicPlayerPage(),
-                                root: true,
-                              );
-                            }
-                          },
-                          onAddToQueue: () => _addToQueue(context, song),
-                          onSinglePlay: () => _singlePlay(context, song),
-                          onDetail: () => _showDetail(context, song),
-                        );
-                      },
-                    ),
+          : Column(
+              children: [
+                // Header dengan tombol Back
+                Padding(
+                  padding: const EdgeInsets.all(16.0),
+                  child: Row(
+                    children: [
+                      IconButton(
+                        icon: const Icon(Icons.arrow_back, color: Colors.white),
+                        onPressed: () => NavigationUtil.pop(context, root: false),
+                      ),
+                      const SizedBox(width: 16),
+                      Text(
+                        widget.playlist.name,
+                        style: const TextStyle(
+                          color: Colors.white,
+                          fontSize: 24,
+                          fontWeight: FontWeight.bold,
+                        ),
+                      ),
+                    ],
                   ),
-                ],
-              ),
+                ),
+                
+                // Daftar Lagu
+                Expanded(
+                  child: ListView.separated(
+                    padding: const EdgeInsets.symmetric(horizontal: 16),
+                    itemCount: _songs.length,
+                    separatorBuilder: (_, _) =>
+                        const Divider(color: Colors.white10, height: 1),
+                    itemBuilder: (context, index) {
+                      final song = _songs[index];
+                      return SongTile(
+                        song: song,
+                        isPlaying: false,
+                        onTap: () async {
+                          AudioManager().playPlaylist(
+                            _songs,
+                            playlistId: widget.playlist.id,
+                          );
+                          AudioManager().local.queue.setIndex(index);
+                          await AudioManager().local.play();
+
+                          if (context.mounted) {
+                            NavigationUtil.push(
+                              context,
+                              const MusicPlayerPage(),
+                              root: true,
+                              transition: PageTransition.slideUp,
+                            );
+                          }
+                        },
+                        onAddToQueue: () => _addToQueue(context, song),
+                        onSinglePlay: () => _singlePlay(context, song),
+                        onDetail: () => _showDetail(context, song),
+                        onDelete: () => _deleteSong(context, song),
+                      );
+                    },
+                  ),
+                ),
+              ],
             ),
     );
   }

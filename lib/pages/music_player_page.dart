@@ -113,9 +113,14 @@ class _MusicPlayerPageState extends State<MusicPlayerPage> {
       );
     }
 
-    return Hero(
-      tag: media.id,
-      child: MediaArtwork(media: media, size: 300, radius: 20),
+    return LayoutBuilder(
+      builder: (context, constraints) {
+        final size = constraints.maxWidth < 300 ? constraints.maxWidth : 300.0;
+        return Hero(
+          tag: media.id,
+          child: MediaArtwork(media: media, size: size, radius: 20),
+        );
+      },
     );
   }
 
@@ -139,28 +144,47 @@ class _MusicPlayerPageState extends State<MusicPlayerPage> {
   }
 
   Widget _controlsRow(AudioManager audio) {
-    return Row(
-      children: [
-        Expanded(
-          child: Row(
+    return LayoutBuilder(
+      builder: (context, constraints) {
+        final isDesktop = MediaQuery.of(context).size.width >= 800;
+
+        if (isDesktop) {
+          return Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
-              _toggleRepeatMode(audio),
-              _toggleShuffleMode(audio),
+              Row(
+                children: [
+                  _toggleRepeatMode(audio),
+                  _toggleShuffleMode(audio),
+                ],
+              ),
+              Flexible(
+                child: _mainPlaybackControls(audio, isDesktop: isDesktop),
+              ),
+              _volumeControl(audio),
             ],
-          ),
-        ),
-        _mainPlaybackControls(audio),
-        Expanded(
-          child: Align(
-            alignment: Alignment.centerRight,
-            child: _volumeControl(audio),
-          ),
-        ),
-      ],
+          );
+        } else {
+          // MOBILE: Left (Shuffle), Center (Controls), Right (Repeat). No Volume.
+          return Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            children: [
+              _toggleShuffleMode(audio),
+              Flexible(
+                child: _mainPlaybackControls(audio, isDesktop: isDesktop),
+              ),
+              _toggleRepeatMode(audio),
+            ],
+          );
+        }
+      },
     );
   }
 
-  Widget _mainPlaybackControls(AudioManager audio) {
+  Widget _mainPlaybackControls(AudioManager audio, {required bool isDesktop}) {
+    final double prevNextSize = isDesktop ? 42 : 36;
+    final double playSize = isDesktop ? 72 : 64;
+
     return ValueListenableBuilder<bool>(
       valueListenable: audio.isPlaying,
       builder: (_, playing, _) {
@@ -168,17 +192,17 @@ class _MusicPlayerPageState extends State<MusicPlayerPage> {
           mainAxisSize: MainAxisSize.min,
           children: [
             IconButton(
-              iconSize: 42,
+              iconSize: prevNextSize,
               icon: const Icon(Icons.skip_previous),
               onPressed: audio.playPrevious,
             ),
             IconButton(
-              iconSize: 72,
+              iconSize: playSize,
               icon: Icon(playing ? Icons.pause_circle_filled : Icons.play_circle_filled),
               onPressed: audio.toggle,
             ),
             IconButton(
-              iconSize: 42,
+              iconSize: prevNextSize,
               icon: const Icon(Icons.skip_next),
               onPressed: audio.playNext,
             ),

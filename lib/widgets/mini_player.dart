@@ -24,69 +24,60 @@ class MiniPlayer extends StatelessWidget {
     return Material(
       elevation: 18,
       color: theme.colorScheme.surface,
-
       child: InkWell(
-        onTap: () {
-          NavigationUtil.slideUp(context, const MusicPlayerPage());
-        },
-
+        onTap: () => NavigationUtil.push(context, const MusicPlayerPage(), root: true, transition: PageTransition.slideUp),
         child: SafeArea(
           top: false,
-
           child: ValueListenableBuilder<NowPlayingMedia?>(
             valueListenable: audio.currentMedia,
-
             builder: (_, media, _) {
-              if (media == null) {
-                return const SizedBox();
-              }
+              if (media == null) return const SizedBox();
 
               return SizedBox(
                 height: 108,
+                child: LayoutBuilder(
+                  builder: (context, constraints) {
+                    final isDesktop = constraints.maxWidth >= 800;
 
-                child: Column(
-                  children: [
-                    AudioProgressBar(audio: audio, showTime: false),
+                    return Column(
+                      children: [
+                        AudioProgressBar(audio: audio, showTime: false),
+                        Expanded(
+                          child: Padding(
+                            padding: const EdgeInsets.symmetric(horizontal: 14),
+                            child: Stack(
+                              children: [
+                                // LEFT: Song Info
+                                Align(
+                                  alignment: Alignment.centerLeft,
+                                  child: SizedBox(
+                                    width: isDesktop ? 300 : constraints.maxWidth * 0.5,
+                                    child: _songInfo(media, theme),
+                                  ),
+                                ),
 
-                    Expanded(
-                      child: Padding(
-                        padding: const EdgeInsets.symmetric(horizontal: 14),
+                                // CENTER / RIGHT: Controls
+                                Align(
+                                  alignment: isDesktop ? Alignment.center : Alignment.centerRight,
+                                  child: _controls(),
+                                ),
 
-                        child: Stack(
-                          children: [
-                            // LEFT
-                            Align(
-                              alignment: Alignment.centerLeft,
-
-                              child: SizedBox(
-                                width: 300,
-
-                                child: _songInfo(media, theme),
-                              ),
+                                // RIGHT: Volume (Desktop only)
+                                if (isDesktop)
+                                  Align(
+                                    alignment: Alignment.centerRight,
+                                    child: SizedBox(
+                                      width: 220,
+                                      child: _rightSection(),
+                                    ),
+                                  ),
+                              ],
                             ),
-
-                            // CENTER
-                            Align(
-                              alignment: Alignment.center,
-
-                              child: _controls(),
-                            ),
-
-                            // RIGHT
-                            Align(
-                              alignment: Alignment.centerRight,
-
-                              child: SizedBox(
-                                width: 220,
-
-                                child: _rightSection(),
-                              ),
-                            ),
-                          ],
+                          ),
                         ),
-                      ),
-                    ),
-                  ],
+                      ],
+                    );
+                  },
                 ),
               );
             },

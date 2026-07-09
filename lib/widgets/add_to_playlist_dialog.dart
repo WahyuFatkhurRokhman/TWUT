@@ -48,13 +48,14 @@ class _AddToPlaylistDialogState extends State<AddToPlaylistDialog> {
         ),
         actions: [
           TextButton(
-            onPressed: () => Navigator.pop(context),
+            onPressed: () => NavigationUtil.pop(context),
             child: const Text('Batal'),
-          ),
-          TextButton(
-            onPressed: () => Navigator.pop(context, controller.text),
-            child: const Text('Buat'),
-          ),
+            ),
+            TextButton(
+            onPressed: () => NavigationUtil.pop(context, result: controller.text),
+            child: const Text('Simpan'),
+            ),
+
         ],
       ),
     );
@@ -69,14 +70,14 @@ class _AddToPlaylistDialogState extends State<AddToPlaylistDialog> {
         // Navigate to the detail page of the new playlist
         final playlist = await _playlistService.getPlaylistDetailById(id);
         if (playlist != null) {
-          Navigator.pop(context); // Close dialog
-          Navigator.pushNamed(
+          NavigationUtil.pop(context); // Close dialog
+          NavigationUtil.pushRoot(
             context,
             AppRouter.playlistDetail,
             arguments: {'playlist': playlist},
           );
         } else {
-          Navigator.pop(context);
+          NavigationUtil.pop(context);
         }
       }
     }
@@ -103,7 +104,7 @@ class _AddToPlaylistDialogState extends State<AddToPlaylistDialog> {
                         if (!mounted) return;
                         if (success) {
                           SnackbarUtil.showSuccess(context, message: 'Lagu ditambahkan ke ${playlist.name}');
-                          Navigator.pop(context);
+                          NavigationUtil.pop(context);
                         } else {
                           SnackbarUtil.showError(context, message: 'Lagu sudah ada di playlist ini');
                         }

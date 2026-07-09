@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:music_player/services/music_scanner.dart';
+import 'package:music_player/utils/navigation_utils.dart';
 import 'package:permission_handler/permission_handler.dart';
 
 class PermissionPage extends StatefulWidget {
@@ -33,13 +34,13 @@ class _PermissionPageState extends State<PermissionPage> {
             ),
             actions: [
               TextButton(
-                onPressed: () => Navigator.pop(context),
+                onPressed: () => NavigationUtil.pop(context),
                 child: const Text("Batal"),
               ),
               TextButton(
                 onPressed: () {
                   openAppSettings();
-                  Navigator.pop(context);
+                  NavigationUtil.pop(context);
                 },
                 child: const Text("Buka Pengaturan"),
               ),

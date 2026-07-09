@@ -7,10 +7,10 @@ import 'package:music_player/utils/navigation_utils.dart';
 import 'package:music_player/utils/snackbar_util.dart';
 import 'package:music_player/widgets/song_tile.dart';
 
-class GroupMusicListPage extends StatelessWidget {
+class DetailCategoryGroupMusicPage extends StatelessWidget {
   final GroupMusic groupMusic;
 
-  const GroupMusicListPage({
+  const DetailCategoryGroupMusicPage({
     super.key,
     required this.groupMusic,
   });
@@ -21,20 +21,34 @@ class GroupMusicListPage extends StatelessWidget {
       ) async {
     final audio = AudioManager();
 
-    await audio.playLocalGroup(groupMusic, startIndex: index);
+    try {
+      await audio.playLocalGroup(groupMusic, startIndex: index);
 
-    if (context.mounted) {
-      NavigationUtil.slideUp(context, const MusicPlayerPage(), root: true);
+      if (context.mounted) {
+        NavigationUtil.push(context, const MusicPlayerPage(), root: true, transition: PageTransition.slideUp);
+      }
+    } catch (e) {
+      debugPrint("Error playing local group: $e");
+      if (context.mounted) {
+        SnackbarUtil.showError(context, message: 'Gagal memutar musik: $e');
+      }
     }
   }
 
   Future<void> _singlePlay(BuildContext context, Song song) async {
     final audio = AudioManager();
 
-    await audio.playLocalSong(song);
+    try {
+      await audio.playLocalSong(song);
 
-    if (context.mounted) {
-      NavigationUtil.slideUp(context, const MusicPlayerPage(), root: true);
+      if (context.mounted) {
+        NavigationUtil.push(context, const MusicPlayerPage(), root: true, transition: PageTransition.slideUp);
+      }
+    } catch (e) {
+      debugPrint("Error playing local song: $e");
+      if (context.mounted) {
+        SnackbarUtil.showError(context, message: 'Gagal memutar musik: $e');
+      }
     }
   }
 
@@ -76,7 +90,7 @@ class GroupMusicListPage extends StatelessWidget {
         ),
         actions: [
           TextButton(
-            onPressed: () => Navigator.pop(context),
+            onPressed: () => NavigationUtil.pop(context),
             child: const Text('Tutup'),
           ),
         ],
