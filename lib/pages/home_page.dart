@@ -6,6 +6,7 @@ import 'package:music_player/pages/local_page.dart';
 import 'package:music_player/pages/music_player_page.dart';
 import 'package:music_player/pages/playlist_page.dart';
 import 'package:music_player/providers/local_provider.dart';
+import 'package:music_player/providers/navigation_provider.dart';
 import 'package:music_player/routes/app_router.dart';
 import 'package:music_player/services/audio_manager.dart';
 import 'package:music_player/services/history_play_local_song.dart';
@@ -35,6 +36,7 @@ class _HomePageState extends State<HomePage> {
   List<Song> _recentSongs = [];
   List<Song> _favoriteSongs = [];
   List<Playlist> _recentPlaylists = [];
+  bool _isNavigating = false;
 
   @override
   void initState() {
@@ -137,11 +139,11 @@ class _HomePageState extends State<HomePage> {
                   ),
 
                   // Grids of Albums (Songs)
-                  if (_recentSongs.isNotEmpty)
-                    _buildAlbumSection('Recently Played', _recentSongs),
                   if (_favoriteSongs.isNotEmpty)
                     _buildAlbumSection('Frequently Played', _favoriteSongs),
-                  
+                  if (_recentSongs.isNotEmpty)
+                    _buildAlbumSection('Recently Played', _recentSongs),
+
                   // Bottom Spacer
                   const SliverToBoxAdapter(child: SizedBox(height: 40)),
                 ],
@@ -175,14 +177,7 @@ class _HomePageState extends State<HomePage> {
               subtitle: "local files",
               iconColor: Colors.blueAccent,
               onTap: () {
-                NavigationUtil.push(
-                  context,
-                  ChangeNotifierProvider(
-                    create: (_) => LocalProvider(AppDatabase()),
-                    child: const LocalPage(),
-                  ),
-                  root: false
-                );
+                Provider.of<NavigationProvider>(context, listen: false).setIndex(1);
               },
             ),
             BentoCard(
@@ -190,8 +185,8 @@ class _HomePageState extends State<HomePage> {
               title: "My Playlists",
               subtitle: "${_recentPlaylists.length} playlists",
               iconColor: Colors.purpleAccent,
-                  onTap: () {
-                NavigationUtil.push(context, const PlaylistPage(), root: false);
+              onTap: () {
+                Provider.of<NavigationProvider>(context, listen: false).setIndex(4);
               },
             ),
           ],
@@ -216,13 +211,6 @@ class _HomePageState extends State<HomePage> {
                     color: Colors.white,
                     fontSize: 20,
                     fontWeight: FontWeight.bold,
-                  ),
-                ),
-                TextButton(
-                  onPressed: () {},
-                  child: const Text(
-                    "View All",
-                    style: TextStyle(color: Color(0xFF53E076)),
                   ),
                 ),
               ],
@@ -255,9 +243,29 @@ class _HomePageState extends State<HomePage> {
                       artist: song.artist,
                       badgeText: "LOCAL",
                       onTap: () async {
-                        await AudioManager().playLocalSong(song);
-                        if (context.mounted) {
-                          NavigationUtil.push(context, const MusicPlayerPage(), root: true, transition: PageTransition.slideUp);
+                        if (_isNavigating) return;
+                        setState(() {
+                          _isNavigating = true;
+                        });
+
+                        try {
+                          await AudioManager().playLocalSong(song);
+                          if (context.mounted) {
+                            await NavigationUtil.push(
+                              context,
+                              const MusicPlayerPage(),
+                              root: true,
+                              transition: PageTransition.slideUp,
+                            );
+                          }
+                        } catch (e) {
+                          debugPrint("Error playing song from Home: $e");
+                        } finally {
+                          if (mounted) {
+                            setState(() {
+                              _isNavigating = false;
+                            });
+                          }
                         }
                       },
                     );

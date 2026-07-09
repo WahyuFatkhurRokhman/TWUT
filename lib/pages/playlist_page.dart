@@ -47,7 +47,11 @@ class _PlaylistPageState extends State<PlaylistPage> {
   }
 
   void _navigateToPlaylist(BuildContext context, Playlist playlist) {
-    NavigationUtil.push(context, PlaylistDetailPage(playlist: playlist), root: false);
+    NavigationUtil.pushNested(
+      context,
+      AppRouter.playlistDetail,
+      arguments: {'playlist': playlist},
+    );
   }
 
   Future<void> _renamePlaylist(Playlist playlist) async {

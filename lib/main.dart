@@ -1,8 +1,10 @@
 import 'package:flutter/material.dart';
 import 'package:music_player/config/app_theme.dart';
+import 'package:music_player/providers/navigation_provider.dart';
 import 'package:music_player/routes/app_router.dart';
 import 'package:music_player/services/audio_manager.dart';
 import 'package:music_player/utils/platform_util.dart';
+import 'package:provider/provider.dart';
 
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -11,7 +13,14 @@ Future<void> main() async {
   debugPrint("Running on: ${PlatformUtil.name}");
   AudioManager().init();
 
-  runApp(const MyApp());
+  runApp(
+    MultiProvider(
+      providers: [
+        ChangeNotifierProvider(create: (_) => NavigationProvider()),
+      ],
+      child: const MyApp(),
+    ),
+  );
 }
 
 class MyApp extends StatelessWidget {

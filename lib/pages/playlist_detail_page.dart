@@ -170,7 +170,7 @@ class _PlaylistDetailPageState extends State<PlaylistDetailPage> {
                     children: [
                       IconButton(
                         icon: const Icon(Icons.arrow_back, color: Colors.white),
-                        onPressed: () => NavigationUtil.pop(context),
+                        onPressed: () => NavigationUtil.pop(context, root: false),
                       ),
                       const SizedBox(width: 16),
                       Text(

@@ -1,7 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:music_player/data/database.dart';
 import 'package:music_player/models/now_playing_media.dart';
-import 'package:music_player/pages/playlist_page.dart';
+import 'package:music_player/widgets/playlist_navigator.dart';
+import 'package:music_player/providers/navigation_provider.dart';
 import 'package:music_player/widgets/local_navigator.dart';
 
 // ... (other imports)
@@ -29,7 +30,6 @@ class MainLayout extends StatefulWidget {
 }
 
 class _MainLayoutState extends State<MainLayout> {
-  int _selectedIndex = 0;
   bool? _hasPermission;
 
   final List<Widget> _pages = [
@@ -40,7 +40,7 @@ class _MainLayoutState extends State<MainLayout> {
     ),
     const YoutubePage(),
     const HistoryPage(),
-    const PlaylistPage(),
+    const PlaylistNavigator(),
   ];
 
   @override
@@ -61,6 +61,9 @@ class _MainLayoutState extends State<MainLayout> {
 
   @override
   Widget build(BuildContext context) {
+    final navProvider = Provider.of<NavigationProvider>(context);
+    final int selectedIndex = navProvider.selectedIndex;
+    
     if (_hasPermission == null) {
       return const Scaffold(
         body: Center(child: CircularProgressIndicator(color: Colors.green)),
@@ -84,12 +87,12 @@ class _MainLayoutState extends State<MainLayout> {
                 children: [
                   if (isDesktop)
                     AppSidebar(
-                      selectedIndex: _selectedIndex,
-                      onSelect: (index) => setState(() => _selectedIndex = index),
+                      selectedIndex: selectedIndex,
+                      onSelect: (index) => navProvider.setIndex(index),
                     ),
                   Expanded(
                     child: IndexedStack(
-                      index: _selectedIndex,
+                      index: selectedIndex,
                       children: _pages,
                     ),
                   ),
@@ -109,8 +112,8 @@ class _MainLayoutState extends State<MainLayout> {
         ),
         bottomNavigationBar: !isDesktop
             ? BottomNavigationBar(
-                currentIndex: _selectedIndex,
-                onTap: (index) => setState(() => _selectedIndex = index),
+                currentIndex: selectedIndex,
+                onTap: (index) => navProvider.setIndex(index),
                 selectedItemColor: Colors.green,
                 unselectedItemColor: Colors.white54,
                 backgroundColor: Colors.black,
