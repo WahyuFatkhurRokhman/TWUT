@@ -71,7 +71,7 @@ class _PlaylistDetailPageState extends State<PlaylistDetailPage> {
     await audio.playLocalSong(song);
 
     if (context.mounted) {
-      NavigationUtil.slideUp(context, const MusicPlayerPage(), root: true);
+      NavigationUtil.push(context, const MusicPlayerPage(), root: true, transition: PageTransition.slideUp);
     }
   }
 
@@ -81,7 +81,7 @@ class _PlaylistDetailPageState extends State<PlaylistDetailPage> {
     audio.playPlaylist(_songs, playlistId: widget.playlist.id);
 
     if (context.mounted) {
-      NavigationUtil.slideUp(context, const MusicPlayerPage(), root: true);
+      NavigationUtil.push(context, const MusicPlayerPage(), root: true, transition: PageTransition.slideUp);
     }
   }
 
@@ -122,7 +122,7 @@ class _PlaylistDetailPageState extends State<PlaylistDetailPage> {
         ),
         actions: [
           TextButton(
-            onPressed: () => Navigator.pop(context),
+            onPressed: () => NavigationUtil.pop(context),
             child: const Text('Tutup'),
           ),
         ],
@@ -137,8 +137,8 @@ class _PlaylistDetailPageState extends State<PlaylistDetailPage> {
         title: const Text('Hapus dari Playlist?'),
         content: Text('Anda yakin ingin menghapus "${song.title}" dari playlist ini?'),
         actions: [
-          TextButton(onPressed: () => Navigator.pop(context, false), child: const Text('Batal')),
-          TextButton(onPressed: () => Navigator.pop(context, true), child: const Text('Hapus')),
+          TextButton(onPressed: () => NavigationUtil.pop(context, result: false), child: const Text('Batal')),
+          TextButton(onPressed: () => NavigationUtil.pop(context, result: true), child: const Text('Hapus')),
         ],
       ),
     );
@@ -170,7 +170,7 @@ class _PlaylistDetailPageState extends State<PlaylistDetailPage> {
                     children: [
                       IconButton(
                         icon: const Icon(Icons.arrow_back, color: Colors.white),
-                        onPressed: () => Navigator.pop(context),
+                        onPressed: () => NavigationUtil.pop(context),
                       ),
                       const SizedBox(width: 16),
                       Text(
@@ -206,10 +206,11 @@ class _PlaylistDetailPageState extends State<PlaylistDetailPage> {
                           await AudioManager().local.play();
 
                           if (context.mounted) {
-                            NavigationUtil.slideUp(
+                            NavigationUtil.push(
                               context,
                               const MusicPlayerPage(),
                               root: true,
+                              transition: PageTransition.slideUp,
                             );
                           }
                         },

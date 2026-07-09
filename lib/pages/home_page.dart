@@ -2,7 +2,10 @@ import 'dart:isolate';
 import 'package:flutter/material.dart';
 import 'package:music_player/data/database.dart';
 import 'package:music_player/models/song.dart';
+import 'package:music_player/pages/local_page.dart';
 import 'package:music_player/pages/music_player_page.dart';
+import 'package:music_player/pages/playlist_page.dart';
+import 'package:music_player/providers/local_provider.dart';
 import 'package:music_player/routes/app_router.dart';
 import 'package:music_player/services/audio_manager.dart';
 import 'package:music_player/services/history_play_local_song.dart';
@@ -13,6 +16,8 @@ import 'package:music_player/services/music_scanner.dart';
 import 'package:music_player/widgets/bento_card.dart';
 import 'package:music_player/widgets/album_card.dart';
 import 'package:music_player/config/app_colors.dart';
+import 'package:music_player/widgets/local_navigator.dart';
+import 'package:provider/provider.dart';
 
 class HomePage extends StatefulWidget {
   const HomePage({super.key});
@@ -165,23 +170,19 @@ class _HomePageState extends State<HomePage> {
           childAspectRatio: childAspectRatio,
           children: [
             BentoCard(
-              icon: Icons.folder_open_rounded,
-              title: "Hi-Res Masters",
-              subtitle: "245 tracks • FLAC Lossless",
-              iconColor: const Color(0xFF53E076),
-              onTap: () {
-                // Future: Navigate to a filtered view
-              },
-            ),
-            BentoCard(
               icon: Icons.download_rounded,
-              title: "Downloads",
-              subtitle: "${_recentSongs.length} local files",
+              title: "Local",
+              subtitle: "local files",
               iconColor: Colors.blueAccent,
               onTap: () {
-                // Navigate to Local Page
-                // Assuming we can access the parent or use a global route
-                // For now, simple navigation if possible or placeholder
+                NavigationUtil.push(
+                  context,
+                  ChangeNotifierProvider(
+                    create: (_) => LocalProvider(AppDatabase()),
+                    child: const LocalPage(),
+                  ),
+                  root: false
+                );
               },
             ),
             BentoCard(
@@ -189,17 +190,8 @@ class _HomePageState extends State<HomePage> {
               title: "My Playlists",
               subtitle: "${_recentPlaylists.length} playlists",
               iconColor: Colors.purpleAccent,
-              onTap: () {
-                // Navigate to playlist page
-              },
-            ),
-            BentoCard(
-              icon: Icons.add_circle_outline_rounded,
-              title: "Add Folder",
-              subtitle: "Link local storage",
-              iconColor: Colors.grey,
-              onTap: () async {
-                await _startScanning(); // Panggil fungsi di atas
+                  onTap: () {
+                NavigationUtil.push(context, const PlaylistPage(), root: false);
               },
             ),
           ],
@@ -265,7 +257,7 @@ class _HomePageState extends State<HomePage> {
                       onTap: () async {
                         await AudioManager().playLocalSong(song);
                         if (context.mounted) {
-                          NavigationUtil.slideUp(context, const MusicPlayerPage(), root: true);
+                          NavigationUtil.push(context, const MusicPlayerPage(), root: true, transition: PageTransition.slideUp);
                         }
                       },
                     );

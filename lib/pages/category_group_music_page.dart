@@ -2,16 +2,18 @@ import 'package:flutter/material.dart';
 import 'package:music_player/models/group_music.dart';
 import 'package:music_player/widgets/group_music_tile.dart';
 import 'package:music_player/utils/navigation_utils.dart';
-import 'package:music_player/pages/group_music_list_page.dart';
+import 'package:music_player/pages/detail_category_group_music_page.dart';
 import 'package:provider/provider.dart';
 import 'package:music_player/providers/local_provider.dart';
 
 class CategoryGroupMusicPage extends StatefulWidget {
   final String category; // folder / album / artist
+  final GlobalKey<NavigatorState>? navigatorKey;
 
   const CategoryGroupMusicPage({
     super.key,
     required this.category,
+    this.navigatorKey,
   });
 
   @override
@@ -56,11 +58,18 @@ class _CategoryGroupMusicPageState extends State<CategoryGroupMusicPage> {
   }
 
   void _openGroup(GroupMusic group) {
-    NavigationUtil.noAnimation(
-      context,
-      GroupMusicListPage(groupMusic: group),
-      root: false,
-    );
+    if (widget.navigatorKey != null) {
+      NavigationUtil.pushWithKey(
+        widget.navigatorKey!,
+        DetailCategoryGroupMusicPage(groupMusic: group),
+      );
+    } else {
+      NavigationUtil.push(
+        context,
+        DetailCategoryGroupMusicPage(groupMusic: group),
+        root: false,
+      );
+    }
   }
 
   @override

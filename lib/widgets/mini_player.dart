@@ -25,7 +25,7 @@ class MiniPlayer extends StatelessWidget {
       elevation: 18,
       color: theme.colorScheme.surface,
       child: InkWell(
-        onTap: () => NavigationUtil.slideUp(context, const MusicPlayerPage()),
+        onTap: () => NavigationUtil.push(context, const MusicPlayerPage(), root: true, transition: PageTransition.slideUp),
         child: SafeArea(
           top: false,
           child: ValueListenableBuilder<NowPlayingMedia?>(

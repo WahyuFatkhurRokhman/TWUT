@@ -51,8 +51,7 @@ class _AppSidebarState extends State<AppSidebar> {
                     const Expanded(
                       child: Text(
                         "Musicplayer",
-                        overflow: TextOverflow.fade,
-                        softWrap: false,
+                        overflow: TextOverflow.ellipsis,
                         style: TextStyle(
                           color: AppColors.accent,
                           fontSize: 18,

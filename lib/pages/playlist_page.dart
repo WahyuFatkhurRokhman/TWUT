@@ -47,13 +47,7 @@ class _PlaylistPageState extends State<PlaylistPage> {
   }
 
   void _navigateToPlaylist(BuildContext context, Playlist playlist) {
-    Navigator.of(context).push(
-      PageRouteBuilder(
-        pageBuilder: (_, __, ___) => PlaylistDetailPage(playlist: playlist),
-        transitionDuration: Duration.zero,
-        reverseTransitionDuration: Duration.zero,
-      ),
-    );
+    NavigationUtil.push(context, PlaylistDetailPage(playlist: playlist), root: false);
   }
 
   Future<void> _renamePlaylist(Playlist playlist) async {
@@ -64,8 +58,8 @@ class _PlaylistPageState extends State<PlaylistPage> {
         title: const Text('Ubah Nama Playlist'),
         content: TextField(controller: controller),
         actions: [
-          TextButton(onPressed: () => Navigator.pop(context), child: const Text('Batal')),
-          TextButton(onPressed: () => Navigator.pop(context, controller.text), child: const Text('Simpan')),
+          TextButton(onPressed: () => NavigationUtil.pop(context), child: const Text('Batal')),
+          TextButton(onPressed: () => NavigationUtil.pop(context, result: controller.text), child: const Text('Simpan')),
         ],
       ),
     );
@@ -83,8 +77,8 @@ class _PlaylistPageState extends State<PlaylistPage> {
         title: const Text('Hapus Playlist?'),
         content: Text('Anda yakin ingin menghapus playlist "${playlist.name}"?'),
         actions: [
-          TextButton(onPressed: () => Navigator.pop(context, false), child: const Text('Batal')),
-          TextButton(onPressed: () => Navigator.pop(context, true), child: const Text('Hapus')),
+          TextButton(onPressed: () => NavigationUtil.pop(context, result: false), child: const Text('Batal')),
+          TextButton(onPressed: () => NavigationUtil.pop(context, result: true), child: const Text('Hapus')),
         ],
       ),
     );

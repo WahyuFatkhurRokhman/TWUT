@@ -2,7 +2,12 @@ import 'package:flutter/material.dart';
 import 'package:music_player/data/database.dart';
 import 'package:music_player/models/now_playing_media.dart';
 import 'package:music_player/pages/playlist_page.dart';
-import 'package:music_player/pages/local_page.dart';
+import 'package:music_player/widgets/local_navigator.dart';
+
+// ... (other imports)
+// Wait, I need to keep the imports consistent.
+// I will just perform the replace in two steps or one careful step.
+
 import 'package:music_player/pages/permission_page.dart';
 import 'package:music_player/pages/youtube_page.dart';
 import 'package:music_player/pages/history_page.dart';
@@ -31,7 +36,7 @@ class _MainLayoutState extends State<MainLayout> {
     const HomePage(),
     ChangeNotifierProvider(
       create: (_) => LocalProvider(AppDatabase()),
-      child: const LocalPage(),
+      child: const LocalNavigator(),
     ),
     const YoutubePage(),
     const HistoryPage(),

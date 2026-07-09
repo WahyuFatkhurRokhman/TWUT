@@ -12,7 +12,6 @@ import 'package:music_player/utils/navigation_utils.dart';
 import 'package:music_player/utils/group_music_helper.dart';
 import 'package:provider/provider.dart';
 
-
 class NavigatorObserverProxy extends NavigatorObserver {
   final VoidCallback onPop;
   final VoidCallback onPush;
@@ -36,7 +35,9 @@ class LocalPage extends StatefulWidget {
   @override
   State<LocalPage> createState() => LocalPageState();
 }
+
 class LocalPageState extends State<LocalPage> {
+  final GlobalKey<NavigatorState> _localNavigatorKey = GlobalKey<NavigatorState>();
   int _selectedIndex = 0;
   bool isInSubPage = false;
 
@@ -50,19 +51,11 @@ class LocalPageState extends State<LocalPage> {
   ArtistGroup? selectedArtist;
 
   bool get isInFolderDetail =>
-    selectedFilter == "folder" && localProvider.selectedGroup.value != null;
+      selectedFilter == "folder" && localProvider.selectedGroup.value != null;
 
-  final List<String> _categories = [
-    "folder",
-    "album",
-    "artist",
-  ];
+  final List<String> _categories = ["folder", "album", "artist"];
 
-  final List<String> _labels = [
-    "Folder",
-    "Album",
-    "Artists",
-  ];
+  final List<String> _labels = ["Folder", "Album", "Artists"];
 
   late LocalProvider localProvider;
 
@@ -89,16 +82,21 @@ class LocalPageState extends State<LocalPage> {
 
     final category = _categories[index];
 
-    NavigationUtil.nestedKey.currentState?.pushReplacementNamed(
-        category == 'folder' ? AppRouter.folder : (category == 'album' ? AppRouter.album : AppRouter.artist)
+    NavigationUtil.pushReplaceWithKey(
+      _localNavigatorKey,
+      ChangeNotifierProvider.value(
+        value: Provider.of<LocalProvider>(context, listen: false),
+        child: CategoryGroupMusicPage(category: category, navigatorKey: _localNavigatorKey),
+      ),
+      transition: PageTransition.none,
     );
   }
 
   void _openInitial() {
-    NavigationUtil.fadeReplace(
-      context,
-      CategoryGroupMusicPage(category: _categories[_selectedIndex]),
-      root: false,
+    NavigationUtil.pushReplaceWithKey(
+      _localNavigatorKey,
+      CategoryGroupMusicPage(category: _categories[_selectedIndex], navigatorKey: _localNavigatorKey),
+      transition: PageTransition.fade,
     );
   }
 
@@ -129,7 +127,6 @@ class LocalPageState extends State<LocalPage> {
     super.dispose();
   }
 
-
   Widget _buildLeftSection() {
     return Row(
       mainAxisSize: MainAxisSize.min,
@@ -141,7 +138,7 @@ class LocalPageState extends State<LocalPage> {
               valueListenable: subPageTitle,
               builder: (context, title, _) {
                 final canPop = group != null || title != null;
-                
+
                 String displayTitle = _currentLabel;
                 if (group != null) {
                   displayTitle = getGroupTitle(group);
@@ -159,10 +156,8 @@ class LocalPageState extends State<LocalPage> {
                           subPageTitle.value = null;
                           resetSelection();
 
-                          if (NavigationUtil.nestedKey.currentState?.canPop() ?? false) {
-                            NavigationUtil.nestedKey.currentState?.pop();
-                          } else {
-                            NavigationUtil.noAnimation(context, const LocalPage());
+                          if (_localNavigatorKey.currentState!.canPop()) {
+                            _localNavigatorKey.currentState!.pop();
                           }
                         },
                         icon: const Icon(Icons.arrow_back),
@@ -184,7 +179,7 @@ class LocalPageState extends State<LocalPage> {
               },
             );
           },
-        )
+        ),
       ],
     );
   }
@@ -255,7 +250,6 @@ class LocalPageState extends State<LocalPage> {
     );
   }
 
-
   Widget buildTopBar() {
     return Padding(
       padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
@@ -263,14 +257,8 @@ class LocalPageState extends State<LocalPage> {
         height: 48,
         child: Stack(
           children: [
-            Align(
-              alignment: Alignment.centerLeft,
-              child: _buildLeftSection(),
-            ),
-            Align(
-              alignment: Alignment.center,
-              child: _buildMiddleSection(),
-            ),
+            Align(alignment: Alignment.centerLeft, child: _buildLeftSection()),
+            Align(alignment: Alignment.center, child: _buildMiddleSection()),
             Align(
               alignment: Alignment.centerRight,
               child: _buildRightSection(),
@@ -291,18 +279,11 @@ class LocalPageState extends State<LocalPage> {
             buildTopBar(),
 
             const SizedBox(height: 5),
-
             Expanded(
               child: Navigator(
-                key: NavigationUtil.nestedKey,
+                key: _localNavigatorKey,
                 initialRoute: AppRouter.home,
                 onGenerateRoute: AppRouter.generateLocalRoute,
-                observers: [
-                  NavigatorObserverProxy(
-                    onPop: _onNavigationChanged,
-                    onPush: _onNavigationChanged,
-                  )
-                ],
               ),
             ),
           ],

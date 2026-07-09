@@ -69,7 +69,7 @@ class _HistoryPageState extends State<HistoryPage> {
                         onTap: () async {
                           await AudioManager().playLocalSong(song);
                           if (context.mounted) {
-                            NavigationUtil.slideUp(context, const MusicPlayerPage(), root: true);
+                            NavigationUtil.push(context, const MusicPlayerPage(), root: true, transition: PageTransition.slideUp);
                           }
                         },
                       );

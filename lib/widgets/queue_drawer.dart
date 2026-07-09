@@ -3,6 +3,7 @@ import 'package:music_player/models/constant/PLAYBACK_SOURCE.dart';
 import 'package:music_player/models/now_playing_media.dart';
 import 'package:music_player/services/audio_manager.dart';
 import 'package:music_player/services/play_queue.dart';
+import 'package:music_player/utils/navigation_utils.dart';
 import 'package:music_player/utils/snackbar_util.dart';
 import 'queue_list_tile.dart';
 
@@ -52,8 +53,8 @@ class _QueueDrawerState extends State<QueueDrawer> {
 
     if (isLastSong) {
       await _audio.stopAndClearCurrent();
-      if (context.mounted && Navigator.of(context).canPop()) {
-        Navigator.of(context).pop();
+      if (context.mounted) {
+        NavigationUtil.pop(context);
       }
     } else if (isCurrent) {
       await _audio.playNext();
@@ -77,21 +78,19 @@ class _QueueDrawerState extends State<QueueDrawer> {
         content: const Text('Ini akan menghentikan musik dan menghapus daftar putar lokal.'),
         actions: [
           TextButton(
-            onPressed: () => Navigator.pop(context),
+            onPressed: () => NavigationUtil.pop(context),
             child: const Text('Batal'),
           ),
           TextButton(
             onPressed: () async {
-              Navigator.pop(context); // Tutup dialog
+              NavigationUtil.pop(context); // Tutup dialog
 
               _queue.clear();
               await _audio.stopAndClearCurrent();
 
               if (context.mounted) {
                 // Tutup drawer
-                if (Navigator.of(context).canPop()) {
-                  Navigator.of(context).pop();
-                }
+                NavigationUtil.pop(context);
                 
                 SnackbarUtil.showSuccess(
                   context,

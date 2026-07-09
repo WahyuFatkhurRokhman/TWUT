@@ -3,7 +3,7 @@ import 'package:music_player/layouts/main_layout.dart';
 import 'package:music_player/pages/music_player_page.dart';
 
 import 'package:music_player/pages/category_group_music_page.dart';
-import 'package:music_player/pages/group_music_list_page.dart';
+import 'package:music_player/pages/detail_category_group_music_page.dart';
 import 'package:music_player/pages/playlist_detail_page.dart';
 import 'package:music_player/pages/playlist_page.dart';
 
@@ -22,6 +22,14 @@ class AppRouter {
       case musicPlayer:
         return MaterialPageRoute(
           builder: (_) => const MusicPlayerPage(),
+          settings: settings,
+        );
+      case playlistDetail:
+        final args = settings.arguments as Map<String, dynamic>;
+        return MaterialPageRoute(
+          builder: (_) => PlaylistDetailPage(
+              playlist: args['playlist']
+          ),
           settings: settings,
         );
       default:
@@ -56,7 +64,7 @@ class AppRouter {
         final args = settings.arguments as Map<String, dynamic>?;
         final groupMusic = args?['groupMusic'] ?? '';
         return MaterialPageRoute(
-          builder: (_) => GroupMusicListPage(groupMusic: groupMusic),
+          builder: (_) => DetailCategoryGroupMusicPage(groupMusic: groupMusic),
         );
       default:
         return MaterialPageRoute(
