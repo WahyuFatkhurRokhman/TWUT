@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:music_player/config/app_colors.dart';
 import 'package:music_player/data/database.dart';
 import 'package:music_player/models/song.dart';
+import 'package:music_player/pages/music_player_page.dart';
 import 'package:music_player/pages/playlist_detail_page.dart';
 import 'package:music_player/routes/app_router.dart';
 import 'package:music_player/services/audio_manager.dart';
@@ -153,6 +154,7 @@ class _PlaylistPageState extends State<PlaylistPage> {
                               await AudioManager().playPlaylist(songs, playlistId: playlist.id, shuffle: false);
                               if (context.mounted) {
                                 SnackbarUtil.showSuccess(context, message: 'Memutar playlist "${playlist.name}"');
+                                NavigationUtil.push(context, const MusicPlayerPage(), root: true, transition: PageTransition.slideUp);
                               }
                             } else {
                               if (context.mounted) {
@@ -174,6 +176,7 @@ class _PlaylistPageState extends State<PlaylistPage> {
                               await AudioManager().playPlaylist(songs, playlistId: playlist.id, shuffle: true);
                               if (context.mounted) {
                                 SnackbarUtil.showSuccess(context, message: 'Memutar playlist "${playlist.name}" (Shuffle)');
+                                NavigationUtil.push(context, const MusicPlayerPage(), root: true, transition: PageTransition.slideUp);
                               }
                             } else {
                               if (context.mounted) {

@@ -26,11 +26,14 @@ class AppRouter {
         );
       case playlistDetail:
         final args = settings.arguments as Map<String, dynamic>;
-        return MaterialPageRoute(
-          builder: (_) => PlaylistDetailPage(
+        return PageRouteBuilder(
+          settings: settings,
+          transitionDuration: Duration.zero,
+          reverseTransitionDuration: Duration.zero,
+          pageBuilder: (_, __, ___) => PlaylistDetailPage(
               playlist: args['playlist']
           ),
-          settings: settings,
+          transitionsBuilder: (_, __, ___, child) => child,
         );
       default:
         return null;
@@ -80,10 +83,14 @@ class AppRouter {
         return MaterialPageRoute(builder: (_) => PlaylistPage());
       case playlistDetail:
         final args = settings.arguments as Map<String, dynamic>;
-        return MaterialPageRoute(
-          builder: (_) => PlaylistDetailPage(
+        return PageRouteBuilder(
+          settings: settings,
+          transitionDuration: Duration.zero,
+          reverseTransitionDuration: Duration.zero,
+          pageBuilder: (_, __, ___) => PlaylistDetailPage(
               playlist: args['playlist']
           ),
+          transitionsBuilder: (_, __, ___, child) => child,
         );
       default:
         return MaterialPageRoute(builder: (_) => PlaylistPage());
