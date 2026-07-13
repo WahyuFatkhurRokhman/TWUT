@@ -30,7 +30,8 @@ class _AppSidebarState extends State<AppSidebar> {
     }
     return AnimatedContainer(
       duration: const Duration(milliseconds: 300),
-      width: _isExpanded ? 280 : 100, // Increased expanded width to 280
+      width: _isExpanded ? 280 : 100,
+      // Increased expanded width to 280
       padding: const EdgeInsets.all(16),
       color: AppColors.card,
       child: _buildContent(),
@@ -45,32 +46,34 @@ class _AppSidebarState extends State<AppSidebar> {
           height: 48,
           child: _isExpanded
               ? Row(
-                  children: [
-                    Image.asset('lib/assets/images/app_icon.png', width: 32, height: 32),
-                    const SizedBox(width: 8),
-                    const Expanded(
-                      child: Text(
-                        "Musicplayer",
-                        overflow: TextOverflow.ellipsis,
-                        style: TextStyle(
-                          color: AppColors.accent,
-                          fontSize: 18,
-                          fontWeight: FontWeight.w600,
-                        ),
-                      ),
-                    ),
-                    IconButton(
-                      icon: const Icon(Icons.chevron_left, color: AppColors.textSecondary),
-                      onPressed: () => setState(() => _isExpanded = false),
-                    ),
-                  ],
-                )
-              : Center(
-                  child: IconButton(
-                    icon: const Icon(Icons.chevron_right, color: AppColors.textSecondary),
-                    onPressed: () => setState(() => _isExpanded = true),
+            children: [
+              Image.asset('assets/images/app_icon.png', width: 32, height: 32),
+              const SizedBox(width: 8),
+              const Expanded(
+                child: Text(
+                  "Musicplayer",
+                  overflow: TextOverflow.ellipsis,
+                  style: TextStyle(
+                    color: AppColors.accent,
+                    fontSize: 18,
+                    fontWeight: FontWeight.w600,
                   ),
                 ),
+              ),
+              IconButton(
+                icon: const Icon(
+                    Icons.chevron_left, color: AppColors.textSecondary),
+                onPressed: () => setState(() => _isExpanded = false),
+              ),
+            ],
+          )
+              : Center(
+            child: IconButton(
+              icon: const Icon(
+                  Icons.chevron_right, color: AppColors.textSecondary),
+              onPressed: () => setState(() => _isExpanded = true),
+            ),
+          ),
         ),
 
         const SizedBox(height: 15),
@@ -117,7 +120,8 @@ class _AppSidebarState extends State<AppSidebar> {
                 label,
                 style: TextStyle(
                   fontSize: 14,
-                  color: isSelected ? AppColors.accent : AppColors.textSecondary,
+                  color: isSelected ? AppColors.accent : AppColors
+                      .textSecondary,
                   fontWeight: isSelected ? FontWeight.w600 : FontWeight.normal,
                 ),
               ),

@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:url_launcher/url_launcher.dart';
 
 import 'package:music_player/models/constant/REPEAT_MODE.dart';
 import 'package:music_player/models/now_playing_media.dart';
@@ -8,6 +9,7 @@ import 'package:music_player/pages/music_player_page.dart';
 import 'package:music_player/services/audio_manager.dart';
 
 import 'package:music_player/utils/navigation_utils.dart';
+import 'package:music_player/utils/platform_util.dart';
 
 import 'package:music_player/widgets/audio_progress_bar.dart';
 import 'package:music_player/widgets/media_artwork.dart';
@@ -25,13 +27,22 @@ class MiniPlayer extends StatelessWidget {
       elevation: 18,
       color: theme.colorScheme.surface,
       child: InkWell(
-        onTap: () => NavigationUtil.push(context, const MusicPlayerPage(), root: true, transition: PageTransition.slideUp),
+        onTap: () =>
+            NavigationUtil.push(context, const MusicPlayerPage(), root: true,
+                transition: PageTransition.slideUp),
         child: SafeArea(
           top: false,
           child: ValueListenableBuilder<NowPlayingMedia?>(
             valueListenable: audio.currentMedia,
             builder: (_, media, _) {
               if (media == null) return const SizedBox();
+
+              final isYoutubeDesktop = media.isYoutube &&
+                  PlatformUtil.isDesktop;
+
+              if (isYoutubeDesktop) {
+                return _youtubeDesktopBar(context, media, theme);
+              }
 
               return SizedBox(
                 height: 108,
@@ -51,14 +62,17 @@ class MiniPlayer extends StatelessWidget {
                                 Align(
                                   alignment: Alignment.centerLeft,
                                   child: SizedBox(
-                                    width: isDesktop ? 300 : constraints.maxWidth * 0.5,
+                                    width: isDesktop ? 300 : constraints
+                                        .maxWidth * 0.5,
                                     child: _songInfo(media, theme),
                                   ),
                                 ),
 
                                 // CENTER / RIGHT: Controls
                                 Align(
-                                  alignment: isDesktop ? Alignment.center : Alignment.centerRight,
+                                  alignment: isDesktop
+                                      ? Alignment.center
+                                      : Alignment.centerRight,
                                   child: _controls(),
                                 ),
 
@@ -82,6 +96,71 @@ class MiniPlayer extends StatelessWidget {
               );
             },
           ),
+        ),
+      ),
+    );
+  }
+
+  Widget _youtubeDesktopBar(BuildContext context, NowPlayingMedia media,
+      ThemeData theme) {
+    return SizedBox(
+      height: 72,
+      child: Padding(
+        padding: const EdgeInsets.symmetric(horizontal: 14),
+        child: Row(
+          children: [
+            Hero(
+              tag: media.id,
+              child: MediaArtwork(media: media, size: 48, radius: 10),
+            ),
+            const SizedBox(width: 12),
+            Expanded(
+              child: Column(
+                mainAxisAlignment: MainAxisAlignment.center,
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    media.title,
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                    style: const TextStyle(
+                        fontWeight: FontWeight.w700, fontSize: 14),
+                  ),
+                  const SizedBox(height: 4),
+                  Row(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      Icon(Icons.ondemand_video, size: 13,
+                          color: Colors.grey.shade600),
+                      const SizedBox(width: 4),
+                      Text(
+                        "Diputar di browser",
+                        style: TextStyle(
+                            fontSize: 12, color: Colors.grey.shade600),
+                      ),
+                    ],
+                  ),
+                ],
+              ),
+            ),
+            IconButton(
+              splashRadius: 20,
+              tooltip: "Buka lagi di browser",
+              icon: const Icon(Icons.open_in_browser),
+              onPressed: () =>
+                  launchUrl(
+                    Uri.parse(
+                        "https://www.youtube.com/watch?v=${media.sourceId}"),
+                    mode: LaunchMode.externalApplication,
+                  ),
+            ),
+            IconButton(
+              splashRadius: 20,
+              tooltip: "Berhenti",
+              icon: const Icon(Icons.close_rounded),
+              onPressed: audio.stopAndClearCurrent,
+            ),
+          ],
         ),
       ),
     );

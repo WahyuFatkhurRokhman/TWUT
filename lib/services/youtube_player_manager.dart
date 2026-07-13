@@ -1,11 +1,13 @@
 import 'dart:async';
 
 import 'package:flutter/foundation.dart';
+import 'package:url_launcher/url_launcher.dart';
 import 'package:youtube_player_iframe/youtube_player_iframe.dart';
 
 import 'package:music_player/models/constant/YT_TYPE.dart';
 import 'package:music_player/models/yt_song.dart';
 import 'package:music_player/services/player_manager.dart';
+import 'package:music_player/utils/platform_util.dart';
 
 class YoutubePlayerManager implements PlayerManager {
   static final YoutubePlayerManager _instance =
@@ -23,8 +25,16 @@ class YoutubePlayerManager implements PlayerManager {
 
   YoutubePlayerController? _controller;
 
-  /// Expose controller so the widget layer can attach it
+  /// Expose controller so the widget layer can attach it.
+  /// Hanya dipakai di Android — di Windows/Linux, youtube_player_iframe
+  /// (berbasis webview_flutter) tidak punya implementasi resmi, sehingga
+  /// controller ini tidak boleh diakses/dibangun di sana.
   YoutubePlayerController get controller {
+    assert(
+    PlatformUtil.isAndroid,
+    'YoutubePlayerManager.controller hanya didukung di Android. '
+        'Gunakan browser bawaan untuk Windows/Linux.',
+    );
     _controller ??= YoutubePlayerController(
       params: const YoutubePlayerParams(
         showControls: false,
@@ -72,6 +82,7 @@ class YoutubePlayerManager implements PlayerManager {
   }
 
   bool get hasNext => _queueIndex < queue.length - 1;
+
   bool get hasPrev => _queueIndex > 0;
 
   // =====================================================
@@ -148,6 +159,13 @@ class YoutubePlayerManager implements PlayerManager {
 
     currentYtSong.value = song;
 
+    // Desktop (Windows/Linux) tidak punya implementasi webview yang stabil,
+    // jadi diputar lewat browser bawaan OS saja.
+    if (PlatformUtil.isDesktop) {
+      await _playInExternalBrowser(song);
+      return;
+    }
+
     try {
       debugPrint("YoutubePlayerManager: play ${song.title} (${song.id})");
 
@@ -162,11 +180,44 @@ class YoutubePlayerManager implements PlayerManager {
   }
 
   // =====================================================
+  // DESKTOP (WINDOWS / LINUX) — buka browser bawaan
+  // =====================================================
+
+  Future<void> _playInExternalBrowser(YtSong song) async {
+    debugPrint(
+      "YoutubePlayerManager: membuka browser bawaan untuk ${song.title} (${song
+          .id})",
+    );
+
+    final uri = Uri.parse("https://www.youtube.com/watch?v=${song.id}");
+
+    try {
+      final opened = await launchUrl(uri, mode: LaunchMode.externalApplication);
+      if (!opened) {
+        debugPrint("YoutubePlayerManager: gagal membuka browser untuk ${uri
+            .toString()}");
+      }
+      // Tidak ada kontrol/progress yang bisa dipantau karena video diputar
+      // di luar aplikasi (di browser), jadi cukup tandai sebagai "playing"
+      // lalu langsung selesai — kontrol play/pause/seek tidak berlaku di sini.
+      isPlaying.value = opened;
+      position.value = Duration.zero;
+      duration.value = Duration.zero;
+    } catch (e) {
+      debugPrint("YoutubePlayerManager _playInExternalBrowser error: $e");
+      isPlaying.value = false;
+    }
+  }
+
+  // =====================================================
   // CONTROLS
   // =====================================================
 
   @override
   Future<void> pause() async {
+    // Di desktop, video diputar di browser eksternal — tidak ada yang bisa
+    // dikontrol dari sini.
+    if (PlatformUtil.isDesktop) return;
     try {
       await _controller?.pauseVideo();
       isPlaying.value = false;
@@ -175,6 +226,7 @@ class YoutubePlayerManager implements PlayerManager {
 
   @override
   Future<void> resume() async {
+    if (PlatformUtil.isDesktop) return;
     try {
       await _controller?.playVideo();
       isPlaying.value = true;
@@ -183,6 +235,7 @@ class YoutubePlayerManager implements PlayerManager {
 
   @override
   Future<void> seek(Duration pos) async {
+    if (PlatformUtil.isDesktop) return;
     try {
       await _controller?.seekTo(
         seconds: pos.inMilliseconds / 1000.0,
@@ -194,9 +247,12 @@ class YoutubePlayerManager implements PlayerManager {
   @override
   Future<void> stop() async {
     _stopPolling();
-    try {
-      await _controller?.stopVideo();
-    } catch (_) {}
+
+    if (!PlatformUtil.isDesktop) {
+      try {
+        await _controller?.stopVideo();
+      } catch (_) {}
+    }
 
     isPlaying.value = false;
     position.value = Duration.zero;
@@ -227,10 +283,12 @@ class YoutubePlayerManager implements PlayerManager {
 
     _stopPolling();
 
-    try {
-      _controller?.close();
-      _controller = null;
-    } catch (_) {}
+    if (!PlatformUtil.isDesktop) {
+      try {
+        _controller?.close();
+      } catch (_) {}
+    }
+    _controller = null;
 
     isPlaying.dispose();
     position.dispose();
