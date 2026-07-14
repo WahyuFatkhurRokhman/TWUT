@@ -32,6 +32,7 @@ class AudioManager {
   final isPlaying = ValueNotifier(false);
   final position = ValueNotifier(Duration.zero);
   final duration = ValueNotifier(Duration.zero);
+  final isLoading = ValueNotifier(false);
 
   // Getters
   PlayQueue get queue => local.queue;
@@ -61,6 +62,9 @@ class AudioManager {
     manager.duration.addListener(() {
       if (_active == manager) duration.value = manager.duration.value;
     });
+    manager.isLoading.addListener(() {
+      if (_active == manager) isLoading.value = manager.isLoading.value;
+    });
   }
 
   // ======================================
@@ -82,6 +86,7 @@ class AudioManager {
     isPlaying.value = _active.isPlaying.value;
     position.value = _active.position.value;
     duration.value = _active.duration.value;
+    isLoading.value = _active.isLoading.value;
   }
 
   // ======================================
@@ -97,8 +102,7 @@ class AudioManager {
     _syncState();
   }
 
-  Future<void> playPlaylist(
-    List<Song> songs, {
+  Future<void> playPlaylist(List<Song> songs, {
     bool shuffle = false,
     int? playlistId,
     int atIndex = 0,
@@ -200,6 +204,7 @@ class AudioManager {
     await _active.stop();
     currentMedia.value = null;
     isPlaying.value = false;
+    isLoading.value = false;
     position.value = Duration.zero;
     duration.value = Duration.zero;
   }

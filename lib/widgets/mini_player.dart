@@ -127,18 +127,41 @@ class MiniPlayer extends StatelessWidget {
                         fontWeight: FontWeight.w700, fontSize: 14),
                   ),
                   const SizedBox(height: 4),
-                  Row(
-                    mainAxisSize: MainAxisSize.min,
-                    children: [
-                      Icon(Icons.ondemand_video, size: 13,
-                          color: Colors.grey.shade600),
-                      const SizedBox(width: 4),
-                      Text(
-                        "Diputar di browser",
-                        style: TextStyle(
-                            fontSize: 12, color: Colors.grey.shade600),
-                      ),
-                    ],
+                  ValueListenableBuilder<bool>(
+                    valueListenable: audio.isLoading,
+                    builder: (_, loading, _) {
+                      if (loading) {
+                        return Row(
+                          mainAxisSize: MainAxisSize.min,
+                          children: [
+                            const SizedBox(
+                              width: 12,
+                              height: 12,
+                              child: CircularProgressIndicator(strokeWidth: 2),
+                            ),
+                            const SizedBox(width: 6),
+                            Text(
+                              "Membuka browser...",
+                              style: TextStyle(
+                                  fontSize: 12, color: Colors.grey.shade600),
+                            ),
+                          ],
+                        );
+                      }
+                      return Row(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          Icon(Icons.ondemand_video, size: 13, color: Colors
+                              .grey.shade600),
+                          const SizedBox(width: 4),
+                          Text(
+                            "Diputar di browser",
+                            style: TextStyle(
+                                fontSize: 12, color: Colors.grey.shade600),
+                          ),
+                        ],
+                      );
+                    },
                   ),
                 ],
               ),
@@ -220,52 +243,65 @@ class MiniPlayer extends StatelessWidget {
       valueListenable: audio.isPlaying,
 
       builder: (_, playing, _) {
-        return Row(
-          mainAxisSize: MainAxisSize.min,
+        return ValueListenableBuilder<bool>(
+          valueListenable: audio.isLoading,
+          builder: (_, loading, _) {
+            return Row(
+              mainAxisSize: MainAxisSize.min,
 
-          children: [
-            IconButton(
-              splashRadius: 20,
+              children: [
+                IconButton(
+                  splashRadius: 20,
 
-              icon: const Icon(Icons.skip_previous_rounded),
+                  icon: const Icon(Icons.skip_previous_rounded),
 
-              onPressed: audio.playPrevious,
-            ),
-
-            const SizedBox(width: 4),
-
-            Container(
-              width: 46,
-              height: 46,
-
-              decoration: const BoxDecoration(
-                shape: BoxShape.circle,
-                color: Colors.green,
-              ),
-
-              child: IconButton(
-                splashRadius: 24,
-                iconSize: 28,
-                color: Colors.white,
-
-                icon: Icon(
-                  playing ? Icons.pause_rounded : Icons.play_arrow_rounded,
+                  onPressed: audio.playPrevious,
                 ),
 
-                onPressed: audio.toggle,
-              ),
-            ),
+                const SizedBox(width: 4),
 
-            const SizedBox(width: 4),
+                Container(
+                  width: 46,
+                  height: 46,
 
-            IconButton(
-              splashRadius: 20,
+                  decoration: const BoxDecoration(
+                    shape: BoxShape.circle,
+                    color: Colors.green,
+                  ),
 
-              icon: const Icon(Icons.skip_next_rounded),
+                  child: loading
+                      ? const Padding(
+                    padding: EdgeInsets.all(13),
+                    child: CircularProgressIndicator(
+                      strokeWidth: 2.4,
+                      color: Colors.white,
+                    ),
+                  )
+                      : IconButton(
+                    splashRadius: 24,
+                    iconSize: 28,
+                    color: Colors.white,
 
-              onPressed: audio.playNext,
-            ),
-          ],
+                    icon: Icon(
+                      playing ? Icons.pause_rounded : Icons.play_arrow_rounded,
+                    ),
+
+                    onPressed: audio.toggle,
+                  ),
+                ),
+
+                const SizedBox(width: 4),
+
+                IconButton(
+                  splashRadius: 20,
+
+                  icon: const Icon(Icons.skip_next_rounded),
+
+                  onPressed: audio.playNext,
+                ),
+              ],
+            );
+          },
         );
       },
     );

@@ -4,6 +4,7 @@ import 'package:music_player/providers/navigation_provider.dart';
 import 'package:music_player/routes/app_router.dart';
 import 'package:music_player/services/audio_manager.dart';
 import 'package:music_player/utils/platform_util.dart';
+import 'package:music_player/services/connectivity_service.dart';
 import 'package:provider/provider.dart';
 
 Future<void> main() async {
@@ -17,6 +18,7 @@ Future<void> main() async {
     MultiProvider(
       providers: [
         ChangeNotifierProvider(create: (_) => NavigationProvider()),
+        Provider(create: (_) => ConnectivityService(), dispose: (_, service) => service.dispose()),
       ],
       child: const MyApp(),
     ),

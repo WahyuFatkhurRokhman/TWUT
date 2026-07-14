@@ -11,7 +11,7 @@ import 'package:music_player/utils/platform_util.dart';
 
 class YoutubePlayerManager implements PlayerManager {
   static final YoutubePlayerManager _instance =
-  YoutubePlayerManager._internal();
+      YoutubePlayerManager._internal();
 
   factory YoutubePlayerManager() => _instance;
 
@@ -31,9 +31,9 @@ class YoutubePlayerManager implements PlayerManager {
   /// controller ini tidak boleh diakses/dibangun di sana.
   YoutubePlayerController get controller {
     assert(
-    PlatformUtil.isAndroid,
-    'YoutubePlayerManager.controller hanya didukung di Android. '
-        'Gunakan browser bawaan untuk Windows/Linux.',
+      PlatformUtil.isAndroid,
+      'YoutubePlayerManager.controller hanya didukung di Android. '
+      'Gunakan browser bawaan untuk Windows/Linux.',
     );
     _controller ??= YoutubePlayerController(
       params: const YoutubePlayerParams(
@@ -62,6 +62,11 @@ class YoutubePlayerManager implements PlayerManager {
 
   @override
   final ValueNotifier<Duration> duration = ValueNotifier(Duration.zero);
+
+  /// True selagi menunggu WebView siap dan/atau video sedang dimuat
+  /// (dari tap play sampai video benar-benar mulai berjalan).
+  @override
+  final ValueNotifier<bool> isLoading = ValueNotifier(false);
 
   final ValueNotifier<YtSong?> currentYtSong = ValueNotifier(null);
 
@@ -116,10 +121,18 @@ class YoutubePlayerManager implements PlayerManager {
       position.value = Duration(milliseconds: (pos * 1000).round());
       duration.value = Duration(milliseconds: (dur * 1000).round());
 
+      // Loading selesai begitu video mulai main atau sudah siap (paused),
+      // tapi tetap dianggap loading selama masih buffering/unstarted/cued.
+      if (playerState == PlayerState.playing ||
+          playerState == PlayerState.paused) {
+        isLoading.value = false;
+      }
+
       // Cek track complete
       if (playerState == PlayerState.ended) {
         _stopPolling();
         isPlaying.value = false;
+        isLoading.value = false;
         onTrackComplete?.call();
       }
     } catch (_) {
@@ -158,6 +171,7 @@ class YoutubePlayerManager implements PlayerManager {
     }
 
     currentYtSong.value = song;
+    isLoading.value = true;
 
     // Desktop (Windows/Linux) tidak punya implementasi webview yang stabil,
     // jadi diputar lewat browser bawaan OS saja.
@@ -166,16 +180,43 @@ class YoutubePlayerManager implements PlayerManager {
       return;
     }
 
-    try {
-      debugPrint("YoutubePlayerManager: play ${song.title} (${song.id})");
+    await _loadVideo(song);
+  }
 
-      // Load video ID ke controller
-      // youtube_player_iframe akan otomatis play setelah load
+  /// Ganti setiap kali play() dipanggil, supaya safety-timeout dari
+  /// permintaan lama tidak ikut mematikan isLoading punya video yang baru.
+  int _loadToken = 0;
+
+  Future<void> _loadVideo(YtSong song) async {
+    final token = ++_loadToken;
+    isLoading.value = true;
+
+    try {
+      debugPrint("YoutubePlayerManager: load ${song.title} (${song.id})");
+
+      // youtube_player_iframe otomatis meng-antre perintah ini sampai
+      // WebView & JS IFrame API siap, jadi aman dipanggil langsung
+      // walau widget YoutubePlayer belum sempat ter-mount.
       await controller.loadVideoById(videoId: song.id);
 
       _startPolling();
+
+      // Safety net: kalau dalam 20 detik video tetap tidak "playing"
+      // (mis. video gagal dimuat / diblokir / tanpa koneksi), matikan
+      // loading supaya UI tidak nyangkut selamanya.
+      Future.delayed(const Duration(seconds: 20), () {
+        if (_isDisposed || token != _loadToken) return;
+        if (isLoading.value) {
+          debugPrint(
+            "YoutubePlayerManager: timeout menunggu video mulai, "
+            "hentikan loading indicator",
+          );
+          isLoading.value = false;
+        }
+      });
     } catch (e) {
-      debugPrint("YoutubePlayerManager play error: $e");
+      debugPrint("YoutubePlayerManager _loadVideo error: $e");
+      isLoading.value = false;
     }
   }
 
@@ -185,8 +226,7 @@ class YoutubePlayerManager implements PlayerManager {
 
   Future<void> _playInExternalBrowser(YtSong song) async {
     debugPrint(
-      "YoutubePlayerManager: membuka browser bawaan untuk ${song.title} (${song
-          .id})",
+      "YoutubePlayerManager: membuka browser bawaan untuk ${song.title} (${song.id})",
     );
 
     final uri = Uri.parse("https://www.youtube.com/watch?v=${song.id}");
@@ -194,8 +234,9 @@ class YoutubePlayerManager implements PlayerManager {
     try {
       final opened = await launchUrl(uri, mode: LaunchMode.externalApplication);
       if (!opened) {
-        debugPrint("YoutubePlayerManager: gagal membuka browser untuk ${uri
-            .toString()}");
+        debugPrint(
+          "YoutubePlayerManager: gagal membuka browser untuk ${uri.toString()}",
+        );
       }
       // Tidak ada kontrol/progress yang bisa dipantau karena video diputar
       // di luar aplikasi (di browser), jadi cukup tandai sebagai "playing"
@@ -206,6 +247,8 @@ class YoutubePlayerManager implements PlayerManager {
     } catch (e) {
       debugPrint("YoutubePlayerManager _playInExternalBrowser error: $e");
       isPlaying.value = false;
+    } finally {
+      isLoading.value = false;
     }
   }
 
@@ -247,6 +290,7 @@ class YoutubePlayerManager implements PlayerManager {
   @override
   Future<void> stop() async {
     _stopPolling();
+    _loadToken++; // batalkan safety-timeout yang masih menunggu
 
     if (!PlatformUtil.isDesktop) {
       try {
@@ -255,6 +299,7 @@ class YoutubePlayerManager implements PlayerManager {
     }
 
     isPlaying.value = false;
+    isLoading.value = false;
     position.value = Duration.zero;
     duration.value = Duration.zero;
     currentYtSong.value = null;
@@ -291,6 +336,7 @@ class YoutubePlayerManager implements PlayerManager {
     _controller = null;
 
     isPlaying.dispose();
+    isLoading.dispose();
     position.dispose();
     duration.dispose();
     currentYtSong.dispose();

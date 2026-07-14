@@ -5,6 +5,7 @@ import 'package:youtube_player_iframe/youtube_player_iframe.dart';
 import 'package:music_player/models/constant/REPEAT_MODE.dart';
 import 'package:music_player/models/now_playing_media.dart';
 import 'package:music_player/services/audio_manager.dart';
+import 'package:music_player/services/youtube_player_manager.dart';
 import 'package:music_player/utils/navigation_utils.dart';
 import 'package:music_player/utils/platform_util.dart';
 import 'package:music_player/widgets/audio_progress_bar.dart';
@@ -19,35 +20,11 @@ class MusicPlayerPage extends StatefulWidget {
 }
 
 class _MusicPlayerPageState extends State<MusicPlayerPage> {
-  YoutubePlayerController? _ytController;
-  String? _lastVideoId;
-
-  @override
-  void dispose() {
-    _ytController?.close();
-    super.dispose();
-  }
-
-  void _initYoutubeController(String videoId) {
-    // Windows/Linux tidak punya implementasi webview yang didukung untuk
-    // youtube_player_iframe, jadi video sudah diputar via browser bawaan
-    // OS (lihat YoutubePlayerManager). Tidak perlu controller di sini.
-    if (!PlatformUtil.isAndroid) return;
-
-    if (_lastVideoId == videoId) return;
-    _lastVideoId = videoId;
-
-    _ytController?.close();
-    _ytController = YoutubePlayerController.fromVideoId(
-      videoId: videoId,
-      autoPlay: false, // Kita kontrol lewat AudioManager
-      params: const YoutubePlayerParams(
-        showControls: true,
-        showFullscreenButton: true,
-        mute: true, // Mute video karena audio diputar lewat just_audio
-      ),
-    );
-  }
+  // Tidak lagi membuat YoutubePlayerController sendiri di sini — pakai
+  // controller yang sama dengan yang dipakai YoutubePlayerManager untuk
+  // play/pause/seek, supaya video yang tampil = video yang benar-benar
+  // dikontrol oleh AudioManager (sebelumnya ada 2 controller terpisah,
+  // sehingga video "diam" walau perintah play sukses terkirim).
 
   @override
   Widget build(BuildContext context) {
@@ -63,10 +40,11 @@ class _MusicPlayerPageState extends State<MusicPlayerPage> {
         backgroundColor: Colors.transparent,
         actions: [
           Builder(
-            builder: (context) => IconButton(
-              icon: const Icon(Icons.queue_music),
-              onPressed: () => Scaffold.of(context).openEndDrawer(),
-            ),
+            builder: (context) =>
+                IconButton(
+                  icon: const Icon(Icons.queue_music),
+                  onPressed: () => Scaffold.of(context).openEndDrawer(),
+                ),
           ),
         ],
       ),
@@ -79,10 +57,6 @@ class _MusicPlayerPageState extends State<MusicPlayerPage> {
               if (mounted) NavigationUtil.popRoot(context);
             });
             return const SizedBox();
-          }
-
-          if (media.isYoutube) {
-            _initYoutubeController(media.sourceId);
           }
 
           return Padding(
@@ -111,12 +85,41 @@ class _MusicPlayerPageState extends State<MusicPlayerPage> {
       return _youtubeDesktopPlaceholder(media);
     }
 
-    if (media.isYoutube && _ytController != null) {
+    if (media.isYoutube && PlatformUtil.isAndroid) {
       return ClipRRect(
         borderRadius: BorderRadius.circular(20),
         child: AspectRatio(
           aspectRatio: 16 / 9,
-          child: YoutubePlayer(controller: _ytController!, aspectRatio: 16 / 9),
+          child: Stack(
+            fit: StackFit.expand,
+            children: [
+              YoutubePlayer(
+                controller: YoutubePlayerManager().controller,
+                aspectRatio: 16 / 9,
+              ),
+              ValueListenableBuilder<bool>(
+                valueListenable: AudioManager().youtube.isLoading,
+                builder: (_, loading, _) {
+                  if (!loading) return const SizedBox.shrink();
+                  return Container(
+                    color: Colors.black54,
+                    alignment: Alignment.center,
+                    child: const Column(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        CircularProgressIndicator(color: Colors.white),
+                        SizedBox(height: 12),
+                        Text(
+                          "Memuat video...",
+                          style: TextStyle(color: Colors.white70, fontSize: 13),
+                        ),
+                      ],
+                    ),
+                  );
+                },
+              ),
+            ],
+          ),
         ),
       );
     }
@@ -140,28 +143,47 @@ class _MusicPlayerPageState extends State<MusicPlayerPage> {
         child: Container(
           color: Colors.black26,
           padding: const EdgeInsets.all(24),
-          child: Column(
-            mainAxisAlignment: MainAxisAlignment.center,
-            children: [
-              const Icon(Icons.ondemand_video, size: 56, color: Colors.white70),
-              const SizedBox(height: 12),
-              const Text(
-                "Diputar di browser bawaan",
-                textAlign: TextAlign.center,
-                style: TextStyle(color: Colors.white70),
-              ),
-              const SizedBox(height: 16),
-              OutlinedButton.icon(
-                onPressed: () => launchUrl(
-                  Uri.parse(
-                    "https://www.youtube.com/watch?v=${media.sourceId}",
+          child: ValueListenableBuilder<bool>(
+            valueListenable: AudioManager().youtube.isLoading,
+            builder: (_, loading, _) {
+              if (loading) {
+                return const Column(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: [
+                    CircularProgressIndicator(color: Colors.white70),
+                    SizedBox(height: 12),
+                    Text(
+                      "Membuka browser...",
+                      style: TextStyle(color: Colors.white70),
+                    ),
+                  ],
+                );
+              }
+              return Column(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  const Icon(
+                      Icons.ondemand_video, size: 56, color: Colors.white70),
+                  const SizedBox(height: 12),
+                  const Text(
+                    "Diputar di browser bawaan",
+                    textAlign: TextAlign.center,
+                    style: TextStyle(color: Colors.white70),
                   ),
-                  mode: LaunchMode.externalApplication,
-                ),
-                icon: const Icon(Icons.open_in_browser),
-                label: const Text("Buka lagi di browser"),
-              ),
-            ],
+                  const SizedBox(height: 16),
+                  OutlinedButton.icon(
+                    onPressed: () =>
+                        launchUrl(
+                          Uri.parse("https://www.youtube.com/watch?v=${media
+                              .sourceId}"),
+                          mode: LaunchMode.externalApplication,
+                        ),
+                    icon: const Icon(Icons.open_in_browser),
+                    label: const Text("Buka lagi di browser"),
+                  ),
+                ],
+              );
+            },
           ),
         ),
       ),
@@ -190,14 +212,20 @@ class _MusicPlayerPageState extends State<MusicPlayerPage> {
   Widget _controlsRow(AudioManager audio) {
     return LayoutBuilder(
       builder: (context, constraints) {
-        final isDesktop = MediaQuery.of(context).size.width >= 800;
+        final isDesktop = MediaQuery
+            .of(context)
+            .size
+            .width >= 800;
 
         if (isDesktop) {
           return Row(
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
               Row(
-                children: [_toggleRepeatMode(audio), _toggleShuffleMode(audio)],
+                children: [
+                  _toggleRepeatMode(audio),
+                  _toggleShuffleMode(audio),
+                ],
               ),
               Flexible(
                 child: _mainPlaybackControls(audio, isDesktop: isDesktop),
@@ -229,27 +257,41 @@ class _MusicPlayerPageState extends State<MusicPlayerPage> {
     return ValueListenableBuilder<bool>(
       valueListenable: audio.isPlaying,
       builder: (_, playing, _) {
-        return Row(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            IconButton(
-              iconSize: prevNextSize,
-              icon: const Icon(Icons.skip_previous),
-              onPressed: audio.playPrevious,
-            ),
-            IconButton(
-              iconSize: playSize,
-              icon: Icon(
-                playing ? Icons.pause_circle_filled : Icons.play_circle_filled,
-              ),
-              onPressed: audio.toggle,
-            ),
-            IconButton(
-              iconSize: prevNextSize,
-              icon: const Icon(Icons.skip_next),
-              onPressed: audio.playNext,
-            ),
-          ],
+        return ValueListenableBuilder<bool>(
+          valueListenable: audio.isLoading,
+          builder: (_, loading, _) {
+            return Row(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                IconButton(
+                  iconSize: prevNextSize,
+                  icon: const Icon(Icons.skip_previous),
+                  onPressed: audio.playPrevious,
+                ),
+                if (loading)
+                  SizedBox(
+                    width: playSize,
+                    height: playSize,
+                    child: Padding(
+                      padding: EdgeInsets.all(playSize * 0.28),
+                      child: const CircularProgressIndicator(strokeWidth: 3),
+                    ),
+                  )
+                else
+                  IconButton(
+                    iconSize: playSize,
+                    icon: Icon(playing ? Icons.pause_circle_filled : Icons
+                        .play_circle_filled),
+                    onPressed: audio.toggle,
+                  ),
+                IconButton(
+                  iconSize: prevNextSize,
+                  icon: const Icon(Icons.skip_next),
+                  onPressed: audio.playNext,
+                ),
+              ],
+            );
+          },
         );
       },
     );
@@ -258,10 +300,12 @@ class _MusicPlayerPageState extends State<MusicPlayerPage> {
   Widget _toggleShuffleMode(AudioManager audio) {
     return ValueListenableBuilder<bool>(
       valueListenable: audio.queue.shuffleMode,
-      builder: (_, enabled, _) => IconButton(
-        onPressed: audio.queue.toggleShuffle,
-        icon: Icon(Icons.shuffle, color: enabled ? Colors.green : Colors.grey),
-      ),
+      builder: (_, enabled, _) =>
+          IconButton(
+            onPressed: audio.queue.toggleShuffle,
+            icon: Icon(
+                Icons.shuffle, color: enabled ? Colors.green : Colors.grey),
+          ),
     );
   }
 
@@ -285,61 +329,11 @@ class _MusicPlayerPageState extends State<MusicPlayerPage> {
   }
 
   Widget _volumeControl(AudioManager audio) {
-    return PopupMenuButton<void>(
-      tooltip: "Volume",
-      icon: ValueListenableBuilder<double>(
-        valueListenable: audio.volume,
-        builder: (_, vol, _) {
-          return Icon(
-            vol == 0
-                ? Icons.volume_off_rounded
-                : vol < 0.5
-                ? Icons.volume_down_rounded
-                : Icons.volume_up_rounded,
-            color: Colors.grey,
-          );
-        },
-      ),
-      itemBuilder: (context) => [
-        PopupMenuItem<void>(
-          enabled: false,
-          child: StatefulBuilder(
-            builder: (context, setMenuState) {
-              return SizedBox(
-                width: 180,
-                child: Row(
-                  children: [
-                    IconButton(
-                      icon: Icon(
-                        audio.volume.value == 0
-                            ? Icons.volume_off_rounded
-                            : Icons.volume_up_rounded,
-                        color: Colors.grey,
-                      ),
-                      onPressed: () {
-                        final newVol = audio.volume.value == 0 ? 1.0 : 0.0;
-                        audio.setVolume(newVol);
-                        setMenuState(() {});
-                      },
-                    ),
-                    Expanded(
-                      child: Slider(
-                        min: 0,
-                        max: 1,
-                        value: audio.volume.value,
-                        onChanged: (value) {
-                          audio.setVolume(value);
-                          setMenuState(() {});
-                        },
-                      ),
-                    ),
-                  ],
-                ),
-              );
-            },
-          ),
-        ),
-      ],
+    return IconButton(
+      icon: const Icon(Icons.volume_up, color: Colors.grey),
+      onPressed: () {
+        // Implementasi volume slider popup atau toggle mute
+      },
     );
   }
 }

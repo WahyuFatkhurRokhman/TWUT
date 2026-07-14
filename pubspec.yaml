@@ -38,6 +38,7 @@ dependencies:
   audio_metadata_reader: ^1.4.2
   path_provider: ^2.1.5
   http: ^1.2.0
+  connectivity_plus: ^6.1.0
 
   # YouTube
   youtube_player_iframe: ^6.0.2
