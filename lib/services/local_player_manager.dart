@@ -15,13 +15,14 @@ class LocalPlayerManager implements PlayerManager {
   final queue = PlayQueue();
 
   @override final isPlaying = ValueNotifier(false);
-  @override final position  = ValueNotifier(Duration.zero);
-  @override final duration  = ValueNotifier(Duration.zero);
+  @override final position = ValueNotifier(Duration.zero);
+  @override final duration = ValueNotifier(Duration.zero);
+  @override final isLoading = ValueNotifier(false);
 
   final currentSong = ValueNotifier<Song?>(null);
 
   bool _queueEnded = false;
-  bool _isSeeking  = false;
+  bool _isSeeking = false;
 
   void Function()? onTrackComplete;
 
@@ -42,25 +43,30 @@ class LocalPlayerManager implements PlayerManager {
     final media = queue.currentMedia;
     if (media == null) return;
 
-    // media.path adalah getter alias ke sourceId (file path)
-    final filePath = media.path;
-    final file = File(filePath);
-    final metadata = readMetadata(file, getImage: true);
+    isLoading.value = true;
+    try {
+      // media.path adalah getter alias ke sourceId (file path)
+      final filePath = media.path;
+      final file = File(filePath);
+      final metadata = readMetadata(file, getImage: true);
 
-    currentSong.value = Song(
-      path: filePath,
-      title: metadata.title ?? media.title,
-      artist: metadata.artist ?? 'Unknown Artist',
-      album: metadata.album ?? 'Unknown Album',
-      artwork: metadata.pictures.isNotEmpty
-          ? metadata.pictures.first.bytes
-          : null,
-    );
+      currentSong.value = Song(
+        path: filePath,
+        title: metadata.title ?? media.title,
+        artist: metadata.artist ?? 'Unknown Artist',
+        album: metadata.album ?? 'Unknown Album',
+        artwork: metadata.pictures.isNotEmpty
+            ? metadata.pictures.first.bytes
+            : null,
+      );
 
-    await _player.stop();
-    await _player.play(DeviceFileSource(filePath));
-    isPlaying.value = true;
-    _queueEnded = false;
+      await _player.stop();
+      await _player.play(DeviceFileSource(filePath));
+      isPlaying.value = true;
+      _queueEnded = false;
+    } finally {
+      isLoading.value = false;
+    }
   }
 
   @override
@@ -104,10 +110,10 @@ class LocalPlayerManager implements PlayerManager {
   Future<void> stop() async {
     await _player.stop();
     currentSong.value = null;
-    isPlaying.value   = false;
-    position.value    = Duration.zero;
-    duration.value    = Duration.zero;
-    _queueEnded       = false;
+    isPlaying.value = false;
+    position.value = Duration.zero;
+    duration.value = Duration.zero;
+    _queueEnded = false;
   }
 
   Future<void> setVolume(double value) async {
@@ -121,6 +127,7 @@ class LocalPlayerManager implements PlayerManager {
     isPlaying.dispose();
     position.dispose();
     duration.dispose();
+    isLoading.dispose();
     currentSong.dispose();
   }
 }

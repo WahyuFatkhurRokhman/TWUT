@@ -1,9 +1,12 @@
+import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:music_player/data/database.dart';
 import 'package:music_player/models/now_playing_media.dart';
 import 'package:music_player/widgets/playlist_navigator.dart';
 import 'package:music_player/providers/navigation_provider.dart';
 import 'package:music_player/widgets/local_navigator.dart';
+import 'package:music_player/services/connectivity_service.dart';
+import 'package:music_player/utils/snackbar_util.dart';
 
 // ... (other imports)
 // Wait, I need to keep the imports consistent.
@@ -31,6 +34,7 @@ class MainLayout extends StatefulWidget {
 
 class _MainLayoutState extends State<MainLayout> {
   bool? _hasPermission;
+  StreamSubscription<bool>? _subscription;
 
   final List<Widget> _pages = [
     const HomePage(),
@@ -47,6 +51,25 @@ class _MainLayoutState extends State<MainLayout> {
   void initState() {
     super.initState();
     _checkPermission();
+  }
+
+  @override
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+    if (_subscription == null) {
+      final connectivityService = Provider.of<ConnectivityService>(context, listen: false);
+      _subscription = connectivityService.connectionStream.listen((isConnected) {
+        if (!isConnected) {
+          SnackbarUtil.showError(context, message: "You are offline", duration: const Duration(seconds: 3));
+        }
+      });
+    }
+  }
+
+  @override
+  void dispose() {
+    _subscription?.cancel();
+    super.dispose();
   }
 
   Future<void> _checkPermission() async {

@@ -1,10 +1,13 @@
 import 'package:flutter/material.dart';
+import 'package:url_launcher/url_launcher.dart';
 import 'package:youtube_player_iframe/youtube_player_iframe.dart';
 
 import 'package:music_player/models/constant/REPEAT_MODE.dart';
 import 'package:music_player/models/now_playing_media.dart';
 import 'package:music_player/services/audio_manager.dart';
+import 'package:music_player/services/youtube_player_manager.dart';
 import 'package:music_player/utils/navigation_utils.dart';
+import 'package:music_player/utils/platform_util.dart';
 import 'package:music_player/widgets/audio_progress_bar.dart';
 import 'package:music_player/widgets/media_artwork.dart';
 import 'package:music_player/widgets/queue_drawer.dart';
@@ -17,30 +20,11 @@ class MusicPlayerPage extends StatefulWidget {
 }
 
 class _MusicPlayerPageState extends State<MusicPlayerPage> {
-  YoutubePlayerController? _ytController;
-  String? _lastVideoId;
-
-  @override
-  void dispose() {
-    _ytController?.close();
-    super.dispose();
-  }
-
-  void _initYoutubeController(String videoId) {
-    if (_lastVideoId == videoId) return;
-    _lastVideoId = videoId;
-
-    _ytController?.close();
-    _ytController = YoutubePlayerController.fromVideoId(
-      videoId: videoId,
-      autoPlay: false, // Kita kontrol lewat AudioManager
-      params: const YoutubePlayerParams(
-        showControls: true,
-        showFullscreenButton: true,
-        mute: true, // Mute video karena audio diputar lewat just_audio
-      ),
-    );
-  }
+  // Tidak lagi membuat YoutubePlayerController sendiri di sini — pakai
+  // controller yang sama dengan yang dipakai YoutubePlayerManager untuk
+  // play/pause/seek, supaya video yang tampil = video yang benar-benar
+  // dikontrol oleh AudioManager (sebelumnya ada 2 controller terpisah,
+  // sehingga video "diam" walau perintah play sukses terkirim).
 
   @override
   Widget build(BuildContext context) {
@@ -56,10 +40,11 @@ class _MusicPlayerPageState extends State<MusicPlayerPage> {
         backgroundColor: Colors.transparent,
         actions: [
           Builder(
-            builder: (context) => IconButton(
-              icon: const Icon(Icons.queue_music),
-              onPressed: () => Scaffold.of(context).openEndDrawer(),
-            ),
+            builder: (context) =>
+                IconButton(
+                  icon: const Icon(Icons.queue_music),
+                  onPressed: () => Scaffold.of(context).openEndDrawer(),
+                ),
           ),
         ],
       ),
@@ -72,10 +57,6 @@ class _MusicPlayerPageState extends State<MusicPlayerPage> {
               if (mounted) NavigationUtil.popRoot(context);
             });
             return const SizedBox();
-          }
-
-          if (media.isYoutube) {
-            _initYoutubeController(media.sourceId);
           }
 
           return Padding(
@@ -100,14 +81,44 @@ class _MusicPlayerPageState extends State<MusicPlayerPage> {
   }
 
   Widget _playerMainView(NowPlayingMedia media) {
-    if (media.isYoutube && _ytController != null) {
+    if (media.isYoutube && PlatformUtil.isDesktop) {
+      return _youtubeDesktopPlaceholder(media);
+    }
+
+    if (media.isYoutube && PlatformUtil.isAndroid) {
       return ClipRRect(
         borderRadius: BorderRadius.circular(20),
         child: AspectRatio(
           aspectRatio: 16 / 9,
-          child: YoutubePlayer(
-            controller: _ytController!,
-            aspectRatio: 16 / 9,
+          child: Stack(
+            fit: StackFit.expand,
+            children: [
+              YoutubePlayer(
+                controller: YoutubePlayerManager().controller,
+                aspectRatio: 16 / 9,
+              ),
+              ValueListenableBuilder<bool>(
+                valueListenable: AudioManager().youtube.isLoading,
+                builder: (_, loading, _) {
+                  if (!loading) return const SizedBox.shrink();
+                  return Container(
+                    color: Colors.black54,
+                    alignment: Alignment.center,
+                    child: const Column(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        CircularProgressIndicator(color: Colors.white),
+                        SizedBox(height: 12),
+                        Text(
+                          "Memuat video...",
+                          style: TextStyle(color: Colors.white70, fontSize: 13),
+                        ),
+                      ],
+                    ),
+                  );
+                },
+              ),
+            ],
           ),
         ),
       );
@@ -121,6 +132,61 @@ class _MusicPlayerPageState extends State<MusicPlayerPage> {
           child: MediaArtwork(media: media, size: size, radius: 20),
         );
       },
+    );
+  }
+
+  Widget _youtubeDesktopPlaceholder(NowPlayingMedia media) {
+    return ClipRRect(
+      borderRadius: BorderRadius.circular(20),
+      child: AspectRatio(
+        aspectRatio: 16 / 9,
+        child: Container(
+          color: Colors.black26,
+          padding: const EdgeInsets.all(24),
+          child: ValueListenableBuilder<bool>(
+            valueListenable: AudioManager().youtube.isLoading,
+            builder: (_, loading, _) {
+              if (loading) {
+                return const Column(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: [
+                    CircularProgressIndicator(color: Colors.white70),
+                    SizedBox(height: 12),
+                    Text(
+                      "Membuka browser...",
+                      style: TextStyle(color: Colors.white70),
+                    ),
+                  ],
+                );
+              }
+              return Column(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  const Icon(
+                      Icons.ondemand_video, size: 56, color: Colors.white70),
+                  const SizedBox(height: 12),
+                  const Text(
+                    "Diputar di browser bawaan",
+                    textAlign: TextAlign.center,
+                    style: TextStyle(color: Colors.white70),
+                  ),
+                  const SizedBox(height: 16),
+                  OutlinedButton.icon(
+                    onPressed: () =>
+                        launchUrl(
+                          Uri.parse("https://www.youtube.com/watch?v=${media
+                              .sourceId}"),
+                          mode: LaunchMode.externalApplication,
+                        ),
+                    icon: const Icon(Icons.open_in_browser),
+                    label: const Text("Buka lagi di browser"),
+                  ),
+                ],
+              );
+            },
+          ),
+        ),
+      ),
     );
   }
 
@@ -146,7 +212,10 @@ class _MusicPlayerPageState extends State<MusicPlayerPage> {
   Widget _controlsRow(AudioManager audio) {
     return LayoutBuilder(
       builder: (context, constraints) {
-        final isDesktop = MediaQuery.of(context).size.width >= 800;
+        final isDesktop = MediaQuery
+            .of(context)
+            .size
+            .width >= 800;
 
         if (isDesktop) {
           return Row(
@@ -188,25 +257,41 @@ class _MusicPlayerPageState extends State<MusicPlayerPage> {
     return ValueListenableBuilder<bool>(
       valueListenable: audio.isPlaying,
       builder: (_, playing, _) {
-        return Row(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            IconButton(
-              iconSize: prevNextSize,
-              icon: const Icon(Icons.skip_previous),
-              onPressed: audio.playPrevious,
-            ),
-            IconButton(
-              iconSize: playSize,
-              icon: Icon(playing ? Icons.pause_circle_filled : Icons.play_circle_filled),
-              onPressed: audio.toggle,
-            ),
-            IconButton(
-              iconSize: prevNextSize,
-              icon: const Icon(Icons.skip_next),
-              onPressed: audio.playNext,
-            ),
-          ],
+        return ValueListenableBuilder<bool>(
+          valueListenable: audio.isLoading,
+          builder: (_, loading, _) {
+            return Row(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                IconButton(
+                  iconSize: prevNextSize,
+                  icon: const Icon(Icons.skip_previous),
+                  onPressed: audio.playPrevious,
+                ),
+                if (loading)
+                  SizedBox(
+                    width: playSize,
+                    height: playSize,
+                    child: Padding(
+                      padding: EdgeInsets.all(playSize * 0.28),
+                      child: const CircularProgressIndicator(strokeWidth: 3),
+                    ),
+                  )
+                else
+                  IconButton(
+                    iconSize: playSize,
+                    icon: Icon(playing ? Icons.pause_circle_filled : Icons
+                        .play_circle_filled),
+                    onPressed: audio.toggle,
+                  ),
+                IconButton(
+                  iconSize: prevNextSize,
+                  icon: const Icon(Icons.skip_next),
+                  onPressed: audio.playNext,
+                ),
+              ],
+            );
+          },
         );
       },
     );
@@ -215,10 +300,12 @@ class _MusicPlayerPageState extends State<MusicPlayerPage> {
   Widget _toggleShuffleMode(AudioManager audio) {
     return ValueListenableBuilder<bool>(
       valueListenable: audio.queue.shuffleMode,
-      builder: (_, enabled, _) => IconButton(
-        onPressed: audio.queue.toggleShuffle,
-        icon: Icon(Icons.shuffle, color: enabled ? Colors.green : Colors.grey),
-      ),
+      builder: (_, enabled, _) =>
+          IconButton(
+            onPressed: audio.queue.toggleShuffle,
+            icon: Icon(
+                Icons.shuffle, color: enabled ? Colors.green : Colors.grey),
+          ),
     );
   }
 
