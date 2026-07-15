@@ -8,6 +8,7 @@ import 'package:music_player/utils/navigation_utils.dart';
 
 class YoutubeSearchDelegate extends SearchDelegate {
   final AudioManager audioManager = AudioManager();
+  bool _isPlaying = false; // Flag to prevent multiple taps
 
   @override
   String? get searchFieldLabel => "Cari di YouTube Music";
@@ -62,7 +63,7 @@ class YoutubeSearchDelegate extends SearchDelegate {
               onTap: () async {
                 close(context, null);
 
-                // SINGLE PLAYER: Memutar satu lagu saja
+                // Play the song
                 await audioManager.playYtSong(song);
 
                 NavigationUtil.push(
@@ -80,4 +81,10 @@ class YoutubeSearchDelegate extends SearchDelegate {
 
   @override
   Widget buildSuggestions(BuildContext context) => const SizedBox();
+
+  @override
+  void close(BuildContext context, Object? result) {
+    _isPlaying = false; // Reset flag when closing
+    super.close(context, result);
+  }
 }

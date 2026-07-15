@@ -108,8 +108,16 @@ class YoutubePlayerManager implements PlayerManager {
     _pollTimer = null;
   }
 
+  bool _hasAttemptedPlay = false;
+  int _playRetryCount = 0;
+  static const int _maxPlayRetries = 3;
+  static const Duration _playRetryDelay = Duration(seconds: 2);
+
   Future<void> _pollState() async {
     try {
+      // Controller should not be null when this method is called
+      if (_controller == null) return;
+
       final playerState = await _controller!.playerState;
       final pos = await _controller!.currentTime;
       final dur = await _controller!.duration;
@@ -199,6 +207,7 @@ class YoutubePlayerManager implements PlayerManager {
       // walau widget YoutubePlayer belum sempat ter-mount.
       await controller.loadVideoById(videoId: song.id);
 
+      // Start polling immediately to monitor player state
       _startPolling();
 
       // Safety net: kalau dalam 20 detik video tetap tidak "playing"

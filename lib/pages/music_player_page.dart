@@ -45,8 +45,10 @@ class _MusicPlayerPageState extends State<MusicPlayerPage> {
   @override
   Widget build(BuildContext context) {
     final audio = AudioManager();
+    debugPrint("MusicPlayerPage: build called");
 
     return Scaffold(
+      // ... (appBar, endDrawer)
       appBar: AppBar(
         leading: IconButton(
           icon: const Icon(Icons.expand_more, size: 32),
@@ -67,6 +69,7 @@ class _MusicPlayerPageState extends State<MusicPlayerPage> {
       body: ValueListenableBuilder<NowPlayingMedia?>(
         valueListenable: audio.currentMedia,
         builder: (_, media, _) {
+          debugPrint("MusicPlayerPage: ValueListenableBuilder media=${media?.title}");
           if (media == null) {
             WidgetsBinding.instance.addPostFrameCallback((_) {
               if (mounted) NavigationUtil.popRoot(context);

@@ -202,8 +202,7 @@ class LocalPageState extends State<LocalPage> {
                 _openCategory(index);
               });
             },
-            child: AnimatedContainer(
-              duration: const Duration(milliseconds: 250),
+            child: Container(
               margin: const EdgeInsets.symmetric(horizontal: 4),
               padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
               decoration: BoxDecoration(

@@ -78,10 +78,15 @@ class AudioManager {
   }
 
   void _syncState() {
+    debugPrint('AudioManager: _syncState called activeSource=${activeSource.value}');
     if (activeSource.value == PlaybackSource.local) {
       currentMedia.value = local.currentSong.value?.toNowPlaying();
+      debugPrint('AudioManager: _syncState local source, currentMedia=${currentMedia.value?.title}');
     } else {
-      currentMedia.value = youtube.currentYtSong.value?.toNowPlaying();
+      final ytSong = youtube.currentYtSong.value;
+      debugPrint('AudioManager: _syncState youtube source, ytSong=${ytSong?.title}');
+      currentMedia.value = ytSong?.toNowPlaying();
+      debugPrint('AudioManager: _syncState youtube source, currentMedia=${currentMedia.value?.title}');
     }
     isPlaying.value = _active.isPlaying.value;
     position.value = _active.position.value;
@@ -158,11 +163,16 @@ class AudioManager {
   // ======================================
 
   Future<void> playYtSong(YtSong song) async {
+    debugPrint('AudioManager: playYtSong called for ${song.title} (id: ${song.id})');
     await _stopOther(PlaybackSource.youtube);
     activeSource.value = PlaybackSource.youtube;
+    debugPrint('AudioManager: set activeSource to youtube');
     youtube.loadQueue([song]); // Hanya 1 lagu
+    debugPrint('AudioManager: loadQueue called');
     await youtube.play();
-    _syncState();
+    debugPrint('AudioManager: youtube.play() completed');
+    _syncState(); // This should be called to update currentMedia
+    debugPrint('AudioManager: _syncState called after playYtSong, currentMedia=${currentMedia.value?.title}, isPlaying=${isPlaying.value}');
   }
 
   // ======================================

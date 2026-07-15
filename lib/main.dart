@@ -9,6 +9,11 @@ import 'package:provider/provider.dart';
 
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
+  
+  if (PlatformUtil.isAndroid) {
+    WebViewPlatform.instance = AndroidWebViewPlatform();
+  }
+
   PlatformUtil.ensureSupported();
 
   debugPrint("Running on: ${PlatformUtil.name}");
