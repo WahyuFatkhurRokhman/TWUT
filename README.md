@@ -214,6 +214,14 @@ ringkasan kasus di [TEST_SUMMARY.md](TEST_SUMMARY.md).
 
 ---
 
+## 📥 Unduh Aplikasi (Releases)
+
+Anda dapat mengunduh versi rilis aplikasi TWUT (v1.1.0) untuk Android, Windows, dan Linux melalui tautan berikut:
+
+👉 [**Lihat Semua Rilis & Download**](releases/README.md)
+
+---
+
 ## 👥 Kontribusi
 
 Kontribusi selalu diterima hangat! Jika Anda ingin menyempurnakan fitur TWUT, silakan buat *issue*
