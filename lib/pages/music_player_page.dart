@@ -25,6 +25,23 @@ class _MusicPlayerPageState extends State<MusicPlayerPage> {
   // dikontrol oleh AudioManager (sebelumnya ada 2 controller terpisah,
   // sehingga video "diam" walau perintah play sukses terkirim).
 
+  double _volumeBeforeMute = 1.0;
+
+  void _toggleMute(AudioManager audio) {
+    if (audio.volume.value > 0) {
+      _volumeBeforeMute = audio.volume.value;
+      audio.setVolume(0);
+    } else {
+      audio.setVolume(_volumeBeforeMute == 0 ? 1.0 : _volumeBeforeMute);
+    }
+  }
+
+  IconData _volumeIcon(double vol) {
+    if (vol == 0) return Icons.volume_off_rounded;
+    if (vol < 0.5) return Icons.volume_down_rounded;
+    return Icons.volume_up_rounded;
+  }
+
   @override
   Widget build(BuildContext context) {
     final audio = AudioManager();
@@ -350,10 +367,67 @@ class _MusicPlayerPageState extends State<MusicPlayerPage> {
   }
 
   Widget _volumeControl(AudioManager audio) {
-    return IconButton(
-      icon: const Icon(Icons.volume_up, color: Colors.grey),
-      onPressed: () {
-        // Implementasi volume slider popup atau toggle mute
+    return ValueListenableBuilder<double>(
+      valueListenable: audio.volume,
+      builder: (_, vol, _) {
+        return PopupMenuButton<void>(
+          tooltip: "Volume",
+          icon: Icon(_volumeIcon(vol), color: Colors.grey),
+          padding: EdgeInsets.zero,
+          offset: const Offset(0, -190),
+          constraints: const BoxConstraints(maxWidth: 56),
+          itemBuilder: (context) => [
+            PopupMenuItem<void>(
+              enabled: true,
+              padding: EdgeInsets.zero,
+              child: SizedBox(
+                width: 40,
+                height: 170,
+                child: StatefulBuilder(
+                  builder: (context, setPopupState) {
+                    return Column(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        ValueListenableBuilder<double>(
+                          valueListenable: audio.volume,
+                          builder: (_, currentVol, _) => Text(
+                            "${(currentVol * 100).round()}%",
+                            style: const TextStyle(fontSize: 11),
+                          ),
+                        ),
+                        Expanded(
+                          child: RotatedBox(
+                            quarterTurns: 3,
+                            child: ValueListenableBuilder<double>(
+                              valueListenable: audio.volume,
+                              builder: (_, currentVol, _) => Slider(
+                                min: 0,
+                                max: 1,
+                                value: currentVol,
+                                onChanged: (v) {
+                                  audio.setVolume(v);
+                                  if (v > 0) _volumeBeforeMute = v;
+                                },
+                              ),
+                            ),
+                          ),
+                        ),
+                        ValueListenableBuilder<double>(
+                          valueListenable: audio.volume,
+                          builder: (_, currentVol, _) => IconButton(
+                            splashRadius: 18,
+                            icon: Icon(_volumeIcon(currentVol), size: 18),
+                            onPressed: () => _toggleMute(audio),
+                          ),
+                        ),
+                      ],
+                    );
+                  },
+                ),
+              ),
+            ),
+          ],
+        );
       },
     );
   }
