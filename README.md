@@ -139,6 +139,10 @@ Ikuti langkah-langkah di bawah ini untuk menjalankan proyek TWUT di mesin lokal 
 
 * **Flutter SDK** (versi `3.11.4` atau lebih tinggi) terpasang di komputer Anda.
 * **Dart SDK** yang kompatibel.
+* **Spesifikasi Sistem Minimum:**
+    * **Android:** Android 5.0 (API Level 21) atau lebih baru.
+    * **Windows:** Windows 10 (version 1809, build 17763) atau lebih baru.
+    * **Linux:** Distribusi Linux dengan GTK 3.0 atau lebih baru.
 * Emulator Android, perangkat Android fisik, atau OS Desktop yang didukung (Windows / Linux) dengan
   mode pengembang (*developer mode*) aktif.
 
