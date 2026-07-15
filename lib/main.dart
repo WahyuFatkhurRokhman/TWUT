@@ -6,16 +6,9 @@ import 'package:music_player/services/audio_manager.dart';
 import 'package:music_player/utils/platform_util.dart';
 import 'package:music_player/services/connectivity_service.dart';
 import 'package:provider/provider.dart';
-import 'package:webview_flutter/webview_flutter.dart';
-import 'package:webview_flutter_android/webview_flutter_android.dart';
 
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
-  
-  if (PlatformUtil.isAndroid) {
-    WebViewPlatform.instance = AndroidWebViewPlatform();
-  }
-
   PlatformUtil.ensureSupported();
 
   debugPrint("Running on: ${PlatformUtil.name}");

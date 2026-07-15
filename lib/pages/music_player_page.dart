@@ -45,10 +45,8 @@ class _MusicPlayerPageState extends State<MusicPlayerPage> {
   @override
   Widget build(BuildContext context) {
     final audio = AudioManager();
-    debugPrint("MusicPlayerPage: build called");
 
     return Scaffold(
-      // ... (appBar, endDrawer)
       appBar: AppBar(
         leading: IconButton(
           icon: const Icon(Icons.expand_more, size: 32),
@@ -58,10 +56,11 @@ class _MusicPlayerPageState extends State<MusicPlayerPage> {
         backgroundColor: Colors.transparent,
         actions: [
           Builder(
-            builder: (context) => IconButton(
-              icon: const Icon(Icons.queue_music),
-              onPressed: () => Scaffold.of(context).openEndDrawer(),
-            ),
+            builder: (context) =>
+                IconButton(
+                  icon: const Icon(Icons.queue_music),
+                  onPressed: () => Scaffold.of(context).openEndDrawer(),
+                ),
           ),
         ],
       ),
@@ -69,7 +68,6 @@ class _MusicPlayerPageState extends State<MusicPlayerPage> {
       body: ValueListenableBuilder<NowPlayingMedia?>(
         valueListenable: audio.currentMedia,
         builder: (_, media, _) {
-          debugPrint("MusicPlayerPage: ValueListenableBuilder media=${media?.title}");
           if (media == null) {
             WidgetsBinding.instance.addPostFrameCallback((_) {
               if (mounted) NavigationUtil.popRoot(context);
@@ -184,10 +182,7 @@ class _MusicPlayerPageState extends State<MusicPlayerPage> {
                 mainAxisAlignment: MainAxisAlignment.center,
                 children: [
                   const Icon(
-                    Icons.ondemand_video,
-                    size: 56,
-                    color: Colors.white70,
-                  ),
+                      Icons.ondemand_video, size: 56, color: Colors.white70),
                   const SizedBox(height: 12),
                   const Text(
                     "Diputar di browser bawaan",
@@ -196,12 +191,12 @@ class _MusicPlayerPageState extends State<MusicPlayerPage> {
                   ),
                   const SizedBox(height: 16),
                   OutlinedButton.icon(
-                    onPressed: () => launchUrl(
-                      Uri.parse(
-                        "https://www.youtube.com/watch?v=${media.sourceId}",
-                      ),
-                      mode: LaunchMode.externalApplication,
-                    ),
+                    onPressed: () =>
+                        launchUrl(
+                          Uri.parse("https://www.youtube.com/watch?v=${media
+                              .sourceId}"),
+                          mode: LaunchMode.externalApplication,
+                        ),
                     icon: const Icon(Icons.open_in_browser),
                     label: const Text("Buka lagi di browser"),
                   ),
@@ -236,7 +231,10 @@ class _MusicPlayerPageState extends State<MusicPlayerPage> {
   Widget _controlsRow(AudioManager audio) {
     return LayoutBuilder(
       builder: (context, constraints) {
-        final isWideLayout = MediaQuery.of(context).size.width >= 800;
+        final isWideLayout = MediaQuery
+            .of(context)
+            .size
+            .width >= 800;
         // Volume slider cuma masuk akal di Windows/Linux, karena di sana
         // aplikasi benar-benar mengatur volume output-nya sendiri. Di
         // Android, volume diatur lewat tombol fisik/sistem, jadi slider
@@ -250,7 +248,10 @@ class _MusicPlayerPageState extends State<MusicPlayerPage> {
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
               Row(
-                children: [_toggleRepeatMode(audio), _toggleShuffleMode(audio)],
+                children: [
+                  _toggleRepeatMode(audio),
+                  _toggleShuffleMode(audio),
+                ],
               ),
               Flexible(
                 child: _mainPlaybackControls(audio, isDesktop: isWideLayout),
@@ -310,19 +311,14 @@ class _MusicPlayerPageState extends State<MusicPlayerPage> {
                         height: playSize,
                         child: Padding(
                           padding: EdgeInsets.all(playSize * 0.28),
-                          child: const CircularProgressIndicator(
-                            strokeWidth: 3,
-                          ),
+                          child: const CircularProgressIndicator(strokeWidth: 3),
                         ),
                       )
                     else
                       IconButton(
                         iconSize: playSize,
-                        icon: Icon(
-                          playing
-                              ? Icons.pause_circle_filled
-                              : Icons.play_circle_filled,
-                        ),
+                        icon: Icon(playing ? Icons.pause_circle_filled : Icons
+                            .play_circle_filled),
                         onPressed: audio.toggle,
                       ),
                     IconButton(
@@ -343,10 +339,12 @@ class _MusicPlayerPageState extends State<MusicPlayerPage> {
   Widget _toggleShuffleMode(AudioManager audio) {
     return ValueListenableBuilder<bool>(
       valueListenable: audio.queue.shuffleMode,
-      builder: (_, enabled, _) => IconButton(
-        onPressed: audio.queue.toggleShuffle,
-        icon: Icon(Icons.shuffle, color: enabled ? Colors.green : Colors.grey),
-      ),
+      builder: (_, enabled, _) =>
+          IconButton(
+            onPressed: audio.queue.toggleShuffle,
+            icon: Icon(
+                Icons.shuffle, color: enabled ? Colors.green : Colors.grey),
+          ),
     );
   }
 

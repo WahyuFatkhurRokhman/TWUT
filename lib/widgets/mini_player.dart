@@ -27,12 +27,9 @@ class MiniPlayer extends StatelessWidget {
       elevation: 18,
       color: theme.colorScheme.surface,
       child: InkWell(
-        onTap: () => NavigationUtil.push(
-          context,
-          const MusicPlayerPage(),
-          root: true,
-          transition: PageTransition.slideUp,
-        ),
+        onTap: () =>
+            NavigationUtil.push(context, const MusicPlayerPage(), root: true,
+                transition: PageTransition.slideUp),
         child: SafeArea(
           top: false,
           child: ValueListenableBuilder<NowPlayingMedia?>(
@@ -68,9 +65,8 @@ class MiniPlayer extends StatelessWidget {
                                 Align(
                                   alignment: Alignment.centerLeft,
                                   child: SizedBox(
-                                    width: isDesktop
-                                        ? 300
-                                        : constraints.maxWidth * 0.5,
+                                    width: isDesktop ? 300 : constraints
+                                        .maxWidth * 0.5,
                                     child: _songInfo(media, theme),
                                   ),
                                 ),
@@ -112,11 +108,8 @@ class MiniPlayer extends StatelessWidget {
   /// Tidak ada kontrol play/pause/seek/skip di sini; kontrol lengkap
   /// (khusus Android, karena Desktop memang tidak bisa dikontrol sama
   /// sekali) hanya tersedia di MusicPlayerPage.
-  Widget _youtubeInfoBar(
-    BuildContext context,
-    NowPlayingMedia media,
-    ThemeData theme,
-  ) {
+  Widget _youtubeInfoBar(BuildContext context, NowPlayingMedia media,
+      ThemeData theme) {
     final isDesktop = PlatformUtil.isDesktop;
 
     return SizedBox(
@@ -140,9 +133,7 @@ class MiniPlayer extends StatelessWidget {
                     maxLines: 1,
                     overflow: TextOverflow.ellipsis,
                     style: const TextStyle(
-                      fontWeight: FontWeight.w700,
-                      fontSize: 14,
-                    ),
+                        fontWeight: FontWeight.w700, fontSize: 14),
                   ),
                   const SizedBox(height: 4),
                   ValueListenableBuilder<bool>(
@@ -159,13 +150,9 @@ class MiniPlayer extends StatelessWidget {
                             ),
                             const SizedBox(width: 6),
                             Text(
-                              isDesktop
-                                  ? "Membuka browser..."
-                                  : "Memuat video...",
+                              isDesktop ? "Membuka browser..." : "Memuat video...",
                               style: TextStyle(
-                                fontSize: 12,
-                                color: Colors.grey.shade600,
-                              ),
+                                  fontSize: 12, color: Colors.grey.shade600),
                             ),
                           ],
                         );
@@ -179,18 +166,13 @@ class MiniPlayer extends StatelessWidget {
                           return Row(
                             mainAxisSize: MainAxisSize.min,
                             children: [
-                              Icon(
-                                Icons.ondemand_video,
-                                size: 13,
-                                color: Colors.grey.shade600,
-                              ),
+                              Icon(Icons.ondemand_video, size: 13, color: Colors
+                                  .grey.shade600),
                               const SizedBox(width: 4),
                               Text(
                                 label,
                                 style: TextStyle(
-                                  fontSize: 12,
-                                  color: Colors.grey.shade600,
-                                ),
+                                    fontSize: 12, color: Colors.grey.shade600),
                               ),
                             ],
                           );
@@ -206,12 +188,12 @@ class MiniPlayer extends StatelessWidget {
                 splashRadius: 20,
                 tooltip: "Buka lagi di browser",
                 icon: const Icon(Icons.open_in_browser),
-                onPressed: () => launchUrl(
-                  Uri.parse(
-                    "https://www.youtube.com/watch?v=${media.sourceId}",
-                  ),
-                  mode: LaunchMode.externalApplication,
-                ),
+                onPressed: () =>
+                    launchUrl(
+                      Uri.parse(
+                          "https://www.youtube.com/watch?v=${media.sourceId}"),
+                      mode: LaunchMode.externalApplication,
+                    ),
               ),
             IconButton(
               splashRadius: 20,
@@ -307,25 +289,23 @@ class MiniPlayer extends StatelessWidget {
 
                   child: loading
                       ? const Padding(
-                          padding: EdgeInsets.all(13),
-                          child: CircularProgressIndicator(
-                            strokeWidth: 2.4,
-                            color: Colors.white,
-                          ),
-                        )
+                    padding: EdgeInsets.all(13),
+                    child: CircularProgressIndicator(
+                      strokeWidth: 2.4,
+                      color: Colors.white,
+                    ),
+                  )
                       : IconButton(
-                          splashRadius: 24,
-                          iconSize: 28,
-                          color: Colors.white,
+                    splashRadius: 24,
+                    iconSize: 28,
+                    color: Colors.white,
 
-                          icon: Icon(
-                            playing
-                                ? Icons.pause_rounded
-                                : Icons.play_arrow_rounded,
-                          ),
+                    icon: Icon(
+                      playing ? Icons.pause_rounded : Icons.play_arrow_rounded,
+                    ),
 
-                          onPressed: audio.toggle,
-                        ),
+                    onPressed: audio.toggle,
+                  ),
                 ),
 
                 const SizedBox(width: 4),
@@ -348,7 +328,10 @@ class MiniPlayer extends StatelessWidget {
   Widget _rightSection() {
     return Row(
       mainAxisSize: MainAxisSize.min,
-      children: [_repeat(), _shuffle()],
+      children: [
+        _repeat(),
+        _shuffle(),
+      ],
     );
   }
 
@@ -398,4 +381,5 @@ class MiniPlayer extends StatelessWidget {
       },
     );
   }
+
 }
