@@ -74,21 +74,32 @@ class _MusicPlayerPageState extends State<MusicPlayerPage> {
             return const SizedBox();
           }
 
-          return Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 24),
-            child: Column(
-              children: [
-                const Spacer(),
-                _playerMainView(media),
-                const Spacer(),
-                _songInfo(media),
-                const Spacer(),
-                AudioProgressBar(audio: audio, showTime: true),
-                const SizedBox(height: 20),
-                _controlsRow(audio),
-                const Spacer(),
-              ],
-            ),
+          return LayoutBuilder(
+            builder: (context, constraints) {
+              return SingleChildScrollView(
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 24,
+                  vertical: 16,
+                ),
+                child: ConstrainedBox(
+                  constraints: BoxConstraints(
+                    minHeight: constraints.maxHeight - 32,
+                  ),
+                  child: Column(
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    children: [
+                      _playerMainView(media),
+                      const SizedBox(height: 24),
+                      _songInfo(media),
+                      const SizedBox(height: 24),
+                      AudioProgressBar(audio: audio, showTime: true),
+                      const SizedBox(height: 20),
+                      _controlsRow(audio),
+                    ],
+                  ),
+                ),
+              );
+            },
           );
         },
       ),

@@ -1,0 +1,13 @@
+display_name: TWUT
+generic_name: Music Player
+icon: assets/images/app_icon.png
+summary: Twut Flutter Application
+description: Twut Flutter Application
+categories:
+  - AudioVideo
+  - Utility
+keywords:
+  - Music
+  - Audio
+  - Twut
+startup_notify: true

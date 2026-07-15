@@ -29,9 +29,10 @@ class BentoCard extends StatelessWidget {
             // sendiri (bukan angka tetap 8/20), supaya proporsional baik di
             // grid 2 kolom (mobile) maupun 4 kolom (desktop lebar), dan
             // tetap wajar kalau card sangat kecil/besar.
-            final shortestSide = constraints.maxWidth < constraints.maxHeight
-                ? constraints.maxWidth
-                : constraints.maxHeight;
+            final shortestSide =
+                constraints.maxWidth < constraints.maxHeight
+                    ? constraints.maxWidth
+                    : constraints.maxHeight;
 
             final iconBoxPadding = (shortestSide * 0.09).clamp(6.0, 14.0);
             final iconSize = (shortestSide * 0.16).clamp(16.0, 28.0);
@@ -42,7 +43,10 @@ class BentoCard extends StatelessWidget {
               decoration: BoxDecoration(
                 color: AppColors.cardBackground,
                 borderRadius: BorderRadius.circular(16),
-                border: Border.all(color: AppColors.border, width: 1),
+                border: Border.all(
+                  color: AppColors.border,
+                  width: 1,
+                ),
               ),
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
