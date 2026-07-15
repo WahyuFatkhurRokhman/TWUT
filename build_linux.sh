@@ -9,7 +9,7 @@ APP_NAME="Twut"                   # nama executable hasil `flutter build linux`
                                     # ini diambil dari BINARY_NAME di linux/CMakeLists.txt, BUKAN dari pubspec.yaml)
 APP_DISPLAY_NAME="TWUT"           # nama yang tampil ke user / di judul jendela
 APP_VERSION="1.1.0"               # versi rilis
-ARCH="x86_64"
+ARCH="x64"
 ICON_PATH="assets/images/app_icon.png" # icon untuk AppImage (WAJIB .png, disarankan 256x256)
 TAR_ICON_PATH="assets/app_icon.ico"    # icon opsional yang ikut disalin ke dalam tar.gz (kosongkan "" kalau tidak perlu)
 CATEGORY="AudioVideo;"            # HANYA satu kategori utama (appimagetool warning kalau lebih dari 1)

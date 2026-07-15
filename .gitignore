@@ -33,7 +33,6 @@ build_linux.sh
 .pub/
 /build/
 /coverage/
-releases/
 
 # Symbolication related
 app.*.symbols
