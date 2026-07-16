@@ -1,4 +1,4 @@
-# 🎵 TWUT (The Way U Tune) — Cross-Platform Music Player
+# 🎵 TWUT (The Way U Tune) — Cross-Platform Music Player [![Release](https://img.shields.io/github/v/release/WahyuFatkhurRokhman/TWUT?label=release)](https://github.com/WahyuFatkhurRokhman/TWUT/releases/tag/v1.1.0)
 
 **TWUT (The Way U Tune)** adalah aplikasi pemutar musik modern, responsif, dan *cross-platform* yang
 dikembangkan menggunakan **Flutter**. Aplikasi ini memadukan kemudahan pemutaran file musik lokal (
